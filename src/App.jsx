@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useAppState } from './store'
 import { BRANCHES } from './branches'
 import BranchRail from './components/BranchRail'
+import NavBar from './components/NavBar'
 import Intro from './steps/Intro'
 import Shezhire from './steps/Shezhire'
 import Test from './steps/Test'
@@ -12,19 +13,36 @@ import AIStep from './steps/AIStep'
 import Passport from './steps/Passport'
 
 const STEPS = [
-  { id: 'intro', label: 'Бастау', icon: '✦' },
-  { id: 'shezhire', label: 'Шежіре', icon: '🌳' },
-  { id: 'test', label: 'Тест', icon: '🧭' },
-  { id: 'pick3', label: 'Pick3', icon: '🎯' },
-  { id: 'vr', label: 'VR-сынама', icon: '🥽' },
-  { id: 'ai', label: '2040', icon: '🤖' },
-  { id: 'passport', label: 'Паспорт', icon: '📘' },
+  { id: 'intro', hash: 'bastau', label: 'Бастау', icon: '🏠' },
+  { id: 'shezhire', hash: 'shezhire', label: 'Шежіре', icon: '🌳' },
+  { id: 'test', hash: 'test', label: 'Тест', icon: '🧭' },
+  { id: 'pick3', hash: 'pick3', label: 'Pick3', icon: '🎯' },
+  { id: 'vr', hash: 'vr', label: 'VR-сынама', icon: '🥽' },
+  { id: 'ai', hash: '2040', label: '2040', icon: '🏙️' },
+  { id: 'passport', hash: 'passport', label: 'Паспорт', icon: '📘' },
 ]
+// URL hash → бөлім нөмірі (тікелей сілтемелер мен Back/Forward үшін)
+const fromHash = () => {
+  const h = (typeof window !== 'undefined' ? window.location.hash : '').replace('#', '')
+  const i = STEPS.findIndex((st) => st.hash === h)
+  return i < 0 ? 0 : i
+}
 
 export default function App() {
   const [s, update, reset] = useAppState()
-  const [step, setStep] = useState(0)
-  const go = (i) => { setStep(i); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const [step, setStep] = useState(fromHash)
+  const go = (i) => {
+    if (i !== step) window.history.pushState({ step: i }, '', '#' + STEPS[i].hash)
+    setStep(i)
+    window.scrollTo({ top: 0, behavior: i === step ? 'smooth' : 'auto' })
+  }
+  // Back / Forward / қолмен өзгертілген hash
+  useEffect(() => {
+    const onPop = () => { setStep(fromHash()); window.scrollTo({ top: 0 }) }
+    window.addEventListener('popstate', onPop)
+    window.addEventListener('hashchange', onPop)
+    return () => { window.removeEventListener('popstate', onPop); window.removeEventListener('hashchange', onPop) }
+  }, [])
   const next = () => go(Math.min(step + 1, STEPS.length - 1))
 
   const done = {
@@ -45,7 +63,7 @@ export default function App() {
   useEffect(() => {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
     const t = setTimeout(() => {
-      const els = mainRef.current?.querySelectorAll('.card, .q, .chip, .vr-card, .path-item, .prompt, .gf-root') || []
+      const els = mainRef.current?.querySelectorAll('.card, .q, .chip, .vr-card, .path-item, .jcard, .prompt, .gf-root') || []
       els.forEach((el, i) => el.animate(
         [{ opacity: 0, transform: 'translateY(35px)' }, { opacity: 1, transform: 'none' }],
         { duration: 800, delay: Math.min(i, 12) * 100, easing: 'cubic-bezier(.215,.61,.355,1)', fill: 'backwards' },
@@ -56,23 +74,7 @@ export default function App() {
 
   return (
     <div className="app" style={{ '--b1': branch.c1, '--b2': branch.c2 }} data-branch={id}>
-      <header className="top">
-        <div className="brand" onClick={() => go(0)}>
-          <span className="logo">ш</span>
-          <div>
-            <b>Кәсіби шежіре</b>
-            <small>Жеті атадан — болашақ мамандыққа</small>
-          </div>
-        </div>
-        <nav className="steps">
-          {STEPS.map((st, i) => (
-            <button key={st.id} className={`step ${i === step ? 'on' : ''} ${done[st.id] ? 'ok' : ''}`} onClick={() => go(i)}>
-              <span>{done[st.id] ? '✓' : st.icon}</span>
-              <em>{st.label}</em>
-            </button>
-          ))}
-        </nav>
-      </header>
+      <NavBar steps={STEPS} step={step} done={done} go={go} />
       <main ref={mainRef}>
         {id !== 'intro' && <BranchRail step={step} done={done} onGo={go} />}
         {id !== 'intro' && <motion.div key={'flash' + step} className="branch-flash" initial={{ x: '-100%', opacity: 0.9 }} animate={{ x: '100%', opacity: 0 }} transition={{ duration: 1, ease: [0.215, 0.61, 0.355, 1] }} />}

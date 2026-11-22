@@ -1,13 +1,15 @@
-import { motion } from 'framer-motion'
 import ScrollIntro from '../intro/ScrollIntro'
+import { BRANCHES } from '../branches'
+import Ornament from '../components/Ornament'
 
+// Саяхат жоспары: әр бөлімнің өз түсі мен символы бар карточкалар (басқанда сол бөлімге өтеді)
 const PATH = [
-  ['🌳', 'Шежіре', 'Отбасыңның кәсіптерін жина'],
-  ['🧭', 'Тест', 'Қызығушылық типіңді анықта'],
-  ['🎯', 'Pick3', '3 мамандық таңда'],
-  ['🥽', 'VR-сынама', 'Мамандықты виртуалды байқап көр'],
-  ['🤖', '2040', 'ЖИ-мен болашақтан сұхбат'],
-  ['📘', 'Паспорт', 'Кәсіби паспортыңды ал'],
+  ['shezhire', '🌳', 'Шежіре', 'Тектің тамыры — болашақтың тірегі'],
+  ['test', '📋', 'Тест', 'Қызығушылық пен қабілетті анықта'],
+  ['pick3', '🎯', 'Pick3', 'Өзіңе сәйкес 3 мамандықты таңда'],
+  ['vr', '🥽', 'VR-сынама', 'Мамандықты виртуалды кеңістікте тәжірибеден өткіз'],
+  ['ai', '🏙️', '2040', 'Болашақтың мамандықтары'],
+  ['passport', '📘', 'Паспорт', 'Сенің кәсіби бағыт паспортың'],
 ]
 
 export default function Intro({ s, update, next, go }) {
@@ -20,18 +22,27 @@ export default function Intro({ s, update, next, go }) {
         onNavigate={go}
         onStart={() => document.getElementById('start')?.scrollIntoView({ behavior: 'smooth' })}
       />
-      <div className="hero" id="start">
-        <h2>Саяхат жоспары</h2>
-        <p>Алты қадамнан өтіп, өз кәсіби паспортыңды аласың.</p>
+      <div className="hero shz-head" id="start">
+        <Ornament width={180} />
+        <h2 className="mega">Саяхат жоспары</h2>
+        <p>Алты бұтақтан өтіп, өз кәсіби паспортыңды аласың.</p>
       </div>
 
-      <div className="path">
-        {PATH.map(([ic, t, d], i) => (
-          <motion.div key={t} className="path-item" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.07 }}>
-            <span className="path-ic">{ic}</span>
-            <b>{i + 1}. {t}</b>
-            <small>{d}</small>
-          </motion.div>
+      <div className="journey">
+        {PATH.map(([id, ic, t, d], i) => (
+          <button
+            key={id} className="jcard"
+            style={{ '--c1': BRANCHES[id].c1, '--c2': BRANCHES[id].c2 }}
+            onClick={() => go(i + 1)}
+            aria-label={`${t} бөліміне өту`}
+          >
+            <span className="jn">0{i + 1}</span>
+            <span className="jsym" aria-hidden="true">{ic}</span>
+            <div>
+              <b>{t}</b>
+              <small>{d}</small>
+            </div>
+          </button>
         ))}
       </div>
 

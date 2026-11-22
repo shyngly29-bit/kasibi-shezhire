@@ -460,7 +460,9 @@ function Director({ U, S, A, progress, progress2, trees, lights }) {
     s.dis = ss(0.4, 0.62, p) * 1.05
     s.envDig = ss(0.42, 0.64, p)
     s.rise = ss(0.46, 0.64, p)
-    s.world = ss(0.5, 0.7, p) * (1 - s.light * 0.92)
+    // бас экранда фондағы голограммалар мен мұнаралар тақырыпты баспауы үшін сәл бәсеңдейді
+    const heroDim = ss(0.86, 0.97, p) * (1 - ss(0.0, 0.15, s.q)) * 0.4
+    s.world = ss(0.5, 0.7, p) * (1 - s.light * 0.92) * (1 - heroDim)
     s.nodes = SECTIONS.map((_, i) => ss(0.6 + i * 0.02, 0.64 + i * 0.02, p) * (i === 0 ? 1 + ss(0, 0.2, s.q) * 0.6 : 1 - ss(0.1, 0.4, s.q) * 0.7))
     U.uTime.value = clock.elapsedTime
     U.uEnergy.value = s.energy

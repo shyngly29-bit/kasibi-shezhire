@@ -127,11 +127,13 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
 
         {/* 85–100% — бас экран: ағаш сол жақта, тақырып оң жақта */}
         <motion.div className="si-hero" style={{ opacity: heroO, x: heroX, pointerEvents: heroPE }}>
+          <Ornament width={200} className="left" />
           <h1>КӘСІБИ<br />ШЕЖІРЕ</h1>
+          <Ornament width={200} className="left bottom" />
           <p>Жеті атадан — болашақ мамандыққа</p>
           <div className="si-cta-row left">
             <button className="btn hero-btn" onClick={() => onNavigate(1)}>Бастау →</button>
-            <button className="btn ghost dark-ghost" onClick={onStart}>Саяхат жоспары ↓</button>
+            <button className="btn hero-btn map" onClick={onStart}>🗺 Саяхат жоспары</button>
           </div>
         </motion.div>
 

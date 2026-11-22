@@ -300,6 +300,74 @@ main { position: relative; }
   .si-reveal-wrap { padding-top: 90px; }
 }
 
+/* ===== Liquid Glass навигация ===== */
+.top { display: none; }
+main { padding-top: 112px; }
+.si { margin-top: -112px !important; }
+.lg-wrap { position: fixed; top: 12px; left: 0; right: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; pointer-events: none; padding: 0 12px; }
+.lg-bar, .lg-menu {
+  pointer-events: auto; position: relative; overflow: hidden;
+  background: linear-gradient(180deg, rgba(40, 70, 100, 0.55) 0%, rgba(8, 28, 48, 0.62) 100%);
+  backdrop-filter: blur(22px) saturate(1.8) brightness(1.05); -webkit-backdrop-filter: blur(22px) saturate(1.8) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(0, 217, 255, 0.25), inset 0 0 24px rgba(0, 217, 255, 0.08), 0 14px 40px -12px rgba(3, 21, 39, 0.6);
+  color: #eaf6ff;
+}
+/* оптикалық жылтыр: жоғарғы жиектегі жарық сызығы */
+.lg-bar::before, .lg-menu::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 42%), radial-gradient(120% 60% at 15% -20%, rgba(0, 217, 255, 0.25), transparent 60%); }
+.lg-bar { display: flex; align-items: center; gap: 14px; width: min(1180px, 100%); padding: 8px 10px 8px 10px; border-radius: 26px; }
+.lg-bar.small { width: auto; min-width: 260px; gap: 12px; padding: 6px 8px 6px 6px; border-radius: 999px; }
+.lg-brand { display: flex; align-items: center; gap: 10px; background: none; border: 0; color: inherit; cursor: pointer; padding: 0; text-align: left; z-index: 1; }
+.lg-brand .logo { width: 40px; height: 40px; border-radius: 13px; background: linear-gradient(135deg, #19e6d2, #1289b5); color: #fff; box-shadow: 0 0 16px rgba(0, 217, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+.lg-bar.small .lg-brand .logo { width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; }
+.lg-name { display: flex; flex-direction: column; white-space: nowrap; overflow: hidden; }
+.lg-name b { font-size: 1rem; }
+.lg-name small { font-size: 0.72rem; color: rgba(234, 246, 255, 0.7); }
+.lg-tabs { display: flex; gap: 4px; margin-left: auto; z-index: 1; }
+.lg-tab { position: relative; display: flex; align-items: center; gap: 6px; padding: 9px 13px; border-radius: 999px; color: rgba(234, 246, 255, 0.82); text-decoration: none; font-weight: 600; font-size: 0.86rem; white-space: nowrap; transition: color 0.2s; }
+.lg-tab:hover { color: #fff; }
+.lg-tab em { font-style: normal; position: relative; }
+.lg-tab .lg-ic { position: relative; font-size: 0.95rem; }
+.lg-tab.on { color: #fff; }
+.lg-pill { position: absolute; inset: 0; border-radius: 999px; background: linear-gradient(180deg, rgba(0, 217, 255, 0.35), rgba(18, 137, 181, 0.35)); border: 1px solid rgba(0, 217, 255, 0.75); box-shadow: 0 0 18px rgba(0, 217, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.45); }
+.lg-current { display: flex; align-items: center; gap: 8px; z-index: 1; font-size: 0.98rem; margin-right: auto; }
+.lg-burger { z-index: 1; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.08); display: grid; place-content: center; gap: 4px; cursor: pointer; }
+.lg-burger i { display: block; width: 18px; height: 2px; border-radius: 2px; background: #eaf6ff; transition: 0.25s; }
+.lg-burger.x i:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.lg-burger.x i:nth-child(2) { opacity: 0; }
+.lg-burger.x i:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+.lg-menu { margin-top: 10px; width: min(320px, 100%); border-radius: 24px; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+.lg-mi { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 16px; color: #eaf6ff; text-decoration: none; font-size: 0.98rem; }
+.lg-mi:hover { background: rgba(255, 255, 255, 0.08); }
+.lg-mi.on { background: linear-gradient(180deg, rgba(0, 217, 255, 0.3), rgba(18, 137, 181, 0.3)); border: 1px solid rgba(0, 217, 255, 0.7); box-shadow: 0 0 16px rgba(0, 217, 255, 0.35); }
+.lg-mi small { margin-left: auto; color: #19e6d2; }
+@media (max-width: 900px) { main { padding-top: 96px; } .si { margin-top: -96px !important; } }
+
+/* Бас экран: тақырып бағаналар мен голограммалардан қорғалған */
+.si-hero { isolation: isolate; }
+.si-hero::before { content: ''; position: absolute; inset: -110px -150px -120px -170px; z-index: -1; pointer-events: none; background: radial-gradient(closest-side, rgba(3, 21, 39, 0.82), rgba(3, 21, 39, 0.55) 55%, rgba(3, 21, 39, 0)); }
+.si-hero h1 { background: linear-gradient(180deg, #8ff6ff 0%, #23c6ff 45%, #3f7dff 100%) !important; -webkit-background-clip: text !important; background-clip: text !important; filter: drop-shadow(0 0 22px rgba(0, 200, 255, 0.45)); }
+.si-hero .ornament { margin: 0 0 10px; }
+.si-hero .ornament.left { margin-left: 0; }
+@media (max-width: 760px) { .si-hero .ornament.left { margin-left: auto; margin-right: auto; } }
+.si-hero .ornament.bottom { margin: 10px 0 0; }
+.hero-btn.map { background: rgba(255, 255, 255, 0.08) !important; border-color: rgba(255, 255, 255, 0.4) !important; box-shadow: none !important; }
+
+/* Саяхат жоспары: бөлім карточкалары (референстің төменгі бөлігі) */
+.journey { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin: 26px 0 30px; }
+.jcard { position: relative; display: flex; font: inherit; flex-direction: column; align-items: center; justify-content: flex-end; text-align: center; min-height: 260px; padding: 18px 14px; border-radius: 24px; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.75); color: var(--ink);
+  background: radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--c1) 30%, #fff) 0%, rgba(255,255,255,0.9) 62%), linear-gradient(180deg, #fff, #f7f4ec);
+  box-shadow: inset 0 1px 0 #fff, 0 18px 36px -18px color-mix(in srgb, var(--c1) 60%, transparent); transition: transform 0.3s cubic-bezier(.34,1.36,.5,1), box-shadow 0.3s; }
+.jcard:hover { transform: translateY(-6px); box-shadow: inset 0 1px 0 #fff, 0 26px 44px -18px color-mix(in srgb, var(--c1) 75%, transparent); }
+.jcard::after { content: '→'; position: absolute; right: -11px; top: 50%; font-weight: 800; color: var(--muted); }
+.jcard:last-child::after { display: none; }
+.jsym { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); width: 96px; height: 96px; border-radius: 30px; display: grid; place-items: center; font-size: 3rem; background: linear-gradient(145deg, color-mix(in srgb, var(--c1) 28%, #fff), color-mix(in srgb, var(--c2) 22%, #fff)); box-shadow: 0 10px 30px -10px var(--c1), inset 0 1px 0 #fff; }
+.jcard b { font-size: 1.35rem; font-weight: 800; background: linear-gradient(90deg, var(--c1), var(--c2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.jcard small { color: #4b5d6c; font-size: 0.82rem; line-height: 1.35; margin-top: 6px; }
+.jcard .jn { position: absolute; top: 12px; left: 14px; font-size: 0.7rem; font-weight: 800; color: var(--c1); letter-spacing: 0.1em; }
+@media (max-width: 1100px) { .journey { grid-template-columns: repeat(3, 1fr); } .jcard::after { display: none; } }
+@media (max-width: 640px) { .journey { grid-template-columns: 1fr; } .jcard { min-height: 150px; flex-direction: row; justify-content: flex-start; text-align: left; gap: 16px; padding-left: 124px; } .jsym { left: 18px; top: 50%; transform: translateY(-50%); width: 84px; height: 84px; font-size: 2.4rem; } .jcard > div { display: flex; flex-direction: column; } }
+
 /* ===== Digital Roots Journey: портал → «Шежіре» → «Тест» ===== */
 :root { --heritage: #c9a568; --navy: #172b3d; }
 .si.si-dark { height: 860vh; }
