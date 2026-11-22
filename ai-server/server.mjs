@@ -3,7 +3,9 @@
 import http from 'node:http'
 
 // Claude OpenRouter арқылы: кілт OPENROUTER_API_KEY ортадан оқылады
-const KEY = process.env.OPENROUTER_API_KEY
+const KEY = (process.env.OPENROUTER_API_KEY || '').trim().replace(/^Bearer\s+/i, '')
+// Кілттің өзін ешқашан логқа шығармаймыз — тек пішімін тексереміз
+console.log(`Кілт: ${KEY ? (KEY.startsWith('sk-or-') ? 'OpenRouter пішімі дұрыс' : 'sk-or- деп басталмайды!') : 'жоқ'}, ұзындығы ${KEY.length}`)
 const MODEL = process.env.AI_MODEL || 'anthropic/claude-opus-5.5'
 const SITE = process.env.SITE_URL || 'https://shyngly29-bit.github.io/kasibi-shezhire/'
 const PORT = Number(process.env.PORT || 8787)
