@@ -114,41 +114,140 @@ export function Meadow({ U, y }) {
   )
 }
 
-// Шөп — инстанс жапырақшалар, жел, біртіндеп цифрлық бөлшектерге ериді
+// Нақты шөп: шоқтармен өскен иілген, ұшына қарай жіңішкеретін жапырақшалар
+const SUN = '(-0.55, 0.16, -0.82)'
+function bladeGeometry() {
+  const seg = 5
+  const pos = [], uv = [], idx = []
+  for (let i = 0; i <= seg; i++) {
+    const y = i / seg
+    const w = 0.055 * Math.pow(1 - y, 0.75) + 0.002
+    const z = 0.04 * y * y // табиғи иілу
+    pos.push(-w, y, z, w, y, z)
+    uv.push(0, y, 1, y)
+    if (i < seg) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2) }
+  }
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
+  g.setIndex(idx)
+  g.computeVertexNormals()
+  return g
+}
+
+// Шоқтардың орындары: ағашқа және камераға (алдыңғы жаққа) жақын жерде тығыз
+function clumpLayout(count, y) {
+  const out = []
+  let rs = 12345
+  const rnd = () => ((rs = (rs * 16807) % 2147483647) / 2147483647)
+  while (out.length < count) {
+    const front = rnd() < 0.45
+    const a = front ? (rnd() * Math.PI * 0.9 + Math.PI * 0.05) : rnd() * Math.PI * 2
+    const r = 1.8 + Math.pow(rnd(), 1.5) * 44
+    const cx = Math.cos(a) * r, cz = front ? Math.abs(Math.sin(a) * r) : Math.sin(a) * r
+    const n = 6 + Math.floor(rnd() * 8)
+    const h = 0.5 + rnd() * 0.7
+    for (let k = 0; k < n && out.length < count; k++) {
+      const ra = rnd() * Math.PI * 2, rr = Math.sqrt(rnd()) * 0.22
+      out.push({ x: cx + Math.cos(ra) * rr, z: cz + Math.sin(ra) * rr, y, rot: rnd() * Math.PI * 2, lean: (rnd() - 0.5) * 0.5, h: h * (0.6 + rnd() * 0.7), w: 0.8 + rnd() * 0.6 })
+    }
+  }
+  return out
+}
+
+const GRASS_VS = `uniform float uTime; varying vec3 vWP; varying float vH; varying vec3 vC; varying float vBack;
+  float hh(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }
+  vec2 wind(vec2 o, float h){
+    vec2 wd = normalize(vec2(1.0, 0.35));
+    float gust = sin(uTime*1.1 + dot(o, wd)*0.22)*0.5 + 0.5;
+    gust += sin(uTime*2.3 + o.x*0.7 + o.y*0.5)*0.15;
+    return wd * (0.12 + 0.42*gust) * h*h;
+  }`
+
 export function Grass({ U, count, y }) {
   const ref = useRef()
+  const geo = useMemo(() => bladeGeometry(), [])
   const mat = useMemo(() => new THREE.ShaderMaterial({
     side: THREE.DoubleSide,
     uniforms: { ...U },
-    vertexShader: `uniform float uTime; varying vec3 vWP; varying float vH; varying vec3 vC;
+    vertexShader: `${GRASS_VS}
       void main(){
-        vH = position.y + 0.45;
+        vH = uv.y;
         vec4 o = instanceMatrix*vec4(0.0,0.0,0.0,1.0);
-        float hh = fract(sin(dot(o.xz, vec2(12.9898,78.233)))*43758.5453);
-        vC = mix(vec3(0.16,0.30,0.08), vec3(0.42,0.50,0.18), hh);
+        float r = hh(o.xz);
         vec4 wp = modelMatrix*instanceMatrix*vec4(position,1.0);
-        wp.x += sin(uTime*1.5 + wp.x*0.4 + wp.z*0.3) * 0.16 * vH;
-        vWP = wp.xyz; gl_Position = projectionMatrix*viewMatrix*wp;
+        vec2 w = wind(o.xz, vH) * (0.6 + r*0.8);
+        wp.xz += w; wp.y -= length(w)*0.3;
+        vWP = wp.xyz;
+        vec3 base = vec3(0.035, 0.085, 0.025);
+        vec3 mid = mix(vec3(0.14, 0.29, 0.06), vec3(0.22, 0.36, 0.09), r);
+        vec3 tip = mix(vec3(0.52, 0.58, 0.22), vec3(0.64, 0.58, 0.28), r);
+        vec3 c = mix(base, mid, smoothstep(0.0, 0.45, vH));
+        c = mix(c, tip, smoothstep(0.45, 1.0, vH));
+        if (r > 0.9) c = mix(c, vec3(0.62, 0.52, 0.30), 0.75); // кепкен шөп
+        vC = c;
+        vec3 V = normalize(wp.xyz - cameraPosition);
+        vBack = pow(max(dot(V, normalize(vec3${SUN})), 0.0), 3.0);
+        gl_Position = projectionMatrix*viewMatrix*wp;
       }`,
-    fragmentShader: `uniform float uDig; varying vec3 vWP; varying float vH; varying vec3 vC; ${NOISE} ${FOG}
+    fragmentShader: `uniform float uDig; uniform float uCool; varying vec3 vWP; varying float vH; varying vec3 vC; varying float vBack; ${NOISE} ${FOG}
       void main(){
         ${DISSOLVE_FRAG}
-        vec3 c = vC * (0.45 + 0.75*vH) + vec3(0.0, 0.85, 1.0)*edge*3.0;
+        vec3 c = vC * (0.7 + 0.4*vH);
+        c += vec3(1.0, 0.78, 0.42) * vBack * vH*vH * 0.85 * (1.0 - uCool); // күн сәулесі жапырақшадан өтеді
+        c += vec3(0.0, 0.85, 1.0) * edge * 3.0;
         gl_FragColor = vec4(applyFog(c, vWP), 1.0);
       }`,
   }), [U])
-  useMemo(() => { mat.userData.count = count }, [mat, count])
   useFrame(() => {
     const g = ref.current
     if (!g || g.userData.done) return
     const d = new THREE.Object3D()
+    clumpLayout(count, y).forEach((b, i) => {
+      d.position.set(b.x, b.y, b.z)
+      d.rotation.set(b.lean * 0.4, b.rot, b.lean)
+      d.scale.set(b.w, b.h, b.w)
+      d.updateMatrix()
+      g.setMatrixAt(i, d.matrix)
+    })
+    g.instanceMatrix.needsUpdate = true
+    g.userData.done = true
+  })
+  return <instancedMesh ref={ref} args={[geo, mat, count]} frustumCulled={false} />
+}
+
+// Дала гүлдері: ақ, сары, күлгін бастар — желмен бірге тербеледі
+export function Flowers({ U, count, y }) {
+  const ref = useRef()
+  const mat = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: { ...U },
+    vertexShader: `${GRASS_VS}
+      void main(){
+        vec4 o = instanceMatrix*vec4(0.0,0.0,0.0,1.0);
+        float r = hh(o.xz + 3.7);
+        vec4 wp = modelMatrix*instanceMatrix*vec4(position,1.0);
+        wp.xz += wind(o.xz, 0.8);
+        vWP = wp.xyz; vH = 1.0;
+        vC = r < 0.45 ? vec3(0.95, 0.94, 0.88) : (r < 0.78 ? vec3(0.95, 0.78, 0.18) : vec3(0.58, 0.42, 0.78));
+        vBack = 0.0;
+        gl_Position = projectionMatrix*viewMatrix*wp;
+      }`,
+    fragmentShader: `uniform float uDig; varying vec3 vWP; varying float vH; varying vec3 vC; varying float vBack; ${NOISE} ${FOG}
+      void main(){
+        ${DISSOLVE_FRAG}
+        gl_FragColor = vec4(applyFog(vC*0.9 + vec3(0.0,0.85,1.0)*edge*3.0, vWP), 1.0);
+      }`,
+  }), [U])
+  useFrame(() => {
+    const g = ref.current
+    if (!g || g.userData.done) return
+    const d = new THREE.Object3D()
+    let rs = 777
+    const rnd = () => ((rs = (rs * 16807) % 2147483647) / 2147483647)
     for (let i = 0; i < count; i++) {
-      const r = 3 + Math.pow(Math.random(), 1.3) * 45
-      const a = Math.random() * Math.PI * 2
-      d.position.set(Math.cos(a) * r, y, Math.sin(a) * r)
-      d.rotation.set((Math.random() - 0.5) * 0.4, Math.random() * Math.PI, (Math.random() - 0.5) * 0.4)
-      const s = 0.7 + Math.random() * 0.9
-      d.scale.set(s * 1.4, s * (0.5 + Math.random() * 0.7), s * 1.4)
+      const a = rnd() * Math.PI * 2, r = 2.5 + Math.pow(rnd(), 1.3) * 36
+      d.position.set(Math.cos(a) * r, y + 0.45 + rnd() * 0.45, Math.abs(Math.sin(a)) * r * (rnd() < 0.6 ? 1 : -1))
+      d.scale.setScalar(0.05 + rnd() * 0.05)
       d.updateMatrix()
       g.setMatrixAt(i, d.matrix)
     }
@@ -157,7 +256,7 @@ export function Grass({ U, count, y }) {
   })
   return (
     <instancedMesh ref={ref} args={[null, mat, count]} frustumCulled={false}>
-      <coneGeometry args={[0.05, 0.9, 3, 1]} />
+      <icosahedronGeometry args={[1, 0]} />
     </instancedMesh>
   )
 }

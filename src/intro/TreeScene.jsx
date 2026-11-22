@@ -5,7 +5,7 @@ import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { useGLTF } from '@react-three/drei'
 import {
-  NOISE, FOG, SkyDome, Hills, Meadow, Grass, RisingParticles,
+  NOISE, FOG, SkyDome, Hills, Meadow, Grass, Flowers, RisingParticles,
   Panels, Architecture, Arches, DataStreams, DataRain, DataNodes, Beams, EnergyRings, TechFloor,
 } from './environment'
 import { platformTexture, labelTexture, glowTexture } from './textures'
@@ -66,7 +66,8 @@ function worldPoints(mesh, step = 1) {
 function useTrees(U) {
   const gltf = useGLTF(TREE_URL)
   return useMemo(() => {
-    const root = gltf.scene
+    // Кэштегі түпнұсқаны өзгертпейміз: әр монтаждауда таза көшірме (әйтпесе қайта кіргенде ағаш кішірейіп кетеді)
+    const root = gltf.scene.clone(true)
     const meshes = []
     root.traverse((o) => { if (o.isMesh) meshes.push(o) })
     const box = new THREE.Box3().setFromObject(root)
@@ -123,7 +124,8 @@ function useTrees(U) {
     meshes.forEach((m, i) => {
       const k = kind(m)
       parts[k] = m
-      const mat = m.material
+      const mat = m.material.clone()
+      m.material = mat
       if (k === 'leaf') { mat.transparent = false; mat.alphaTest = 0.5; mat.depthWrite = true }
       mat.side = THREE.DoubleSide
       patchNature(mat, k + i, U, k === 'leaf' ? 0.35 : 1)
@@ -508,7 +510,8 @@ function Universe({ A, progress, progress2, onNavigate, onReady }) {
       <SkyDome U={U} />
       <Hills U={U} />
       <Meadow U={U} y={GROUND} />
-      <Grass U={U} count={LITE ? 3500 : 14000} y={GROUND} />
+      <Grass U={U} count={LITE ? 16000 : 60000} y={GROUND} />
+      <Flowers U={U} count={LITE ? 400 : 1600} y={GROUND} />
       <RisingParticles U={U} S={S} lite={LITE} />
       <TechFloor U={U} S={S} lite={LITE} />
       <primitive object={T.tree} />
