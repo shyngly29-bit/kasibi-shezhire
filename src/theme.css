@@ -521,3 +521,33 @@ html, body { overflow-x: clip; }
 .si-cap.nature-cap { background: rgba(255, 255, 255, 0.72); }
 .sim-help, .sim-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
 .lg-bar, .lg-menu { backdrop-filter: blur(12px) saturate(1.5); -webkit-backdrop-filter: blur(12px) saturate(1.5); }
+
+/* ===== Интерактивті саяхат картасы ===== */
+.rail-scroll { position: relative; margin: 4px -8px 18px; padding: 0 8px; overflow-x: auto; overflow-y: visible; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.rail-scroll::-webkit-scrollbar { display: none; }
+.rail-scroll .rail { min-width: 560px; height: 112px; margin: 0; padding-top: 8px; }
+.rail-pulse { filter: drop-shadow(0 0 8px rgba(201, 165, 104, 0.9)); opacity: 0.15; }
+.rn { position: absolute; transform: translate(-50%, -50%); width: 48px; height: 48px; border: 0; background: none; padding: 0; cursor: pointer; display: grid; place-items: center; -webkit-tap-highlight-color: transparent; }
+.rn:focus-visible { outline: 2px solid var(--c1); outline-offset: 2px; border-radius: 50%; }
+.rn-dot { width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 10px; font-weight: 800; color: #fff; background: #fff; border: 2px solid color-mix(in srgb, var(--c1) 45%, rgba(23, 43, 61, 0.2)); transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s, background 0.25s; }
+.rn-lbl { position: absolute; top: 40px; left: 50%; transform: translateX(-50%); font-size: 0.74rem; font-weight: 700; color: var(--muted); white-space: nowrap; transition: color 0.2s; }
+/* Орындалды */
+.rn-done .rn-dot { width: 18px; height: 18px; background: linear-gradient(135deg, var(--c1), var(--c2)); border-color: transparent; }
+.rn-done .rn-lbl { color: color-mix(in srgb, var(--c1) 75%, #172b3d); }
+/* Қазір осында */
+.rn-active .rn-dot { width: 24px; height: 24px; border: 0; background: linear-gradient(135deg, var(--c1), var(--c2)); box-shadow: 0 0 0 6px color-mix(in srgb, var(--c1) 16%, transparent), 0 0 16px color-mix(in srgb, #c9a568 70%, var(--c1)); }
+.rn-active .rn-lbl { color: var(--c1); top: 44px; }
+/* Hover / басқан сәт */
+.rn:hover .rn-dot, .rn:focus-visible .rn-dot { transform: scale(1.3); box-shadow: 0 0 0 5px color-mix(in srgb, var(--c1) 14%, transparent), 0 0 14px rgba(201, 165, 104, 0.55); }
+.rn:hover .rn-lbl, .rn:focus-visible .rn-lbl { color: #172b3d; }
+.rn-pending .rn-dot { transform: scale(1.4); background: linear-gradient(135deg, var(--c1), var(--c2)); box-shadow: 0 0 0 7px color-mix(in srgb, var(--c1) 18%, transparent), 0 0 20px rgba(201, 165, 104, 0.8); }
+/* Liquid Glass кеңес */
+.rn-tip { position: absolute; bottom: 44px; left: 50%; translate: -50% 0; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 12px; border-radius: 14px; white-space: nowrap; pointer-events: none; z-index: 5;
+  background: linear-gradient(180deg, rgba(40, 70, 100, 0.72), rgba(8, 28, 48, 0.8)); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 8px 22px -8px rgba(3, 21, 39, 0.55); color: #eaf6ff; }
+.rn-tip b { font-size: 0.8rem; }
+.rn-tip small { font-size: 0.68rem; color: #9fe9f2; }
+@media (max-width: 760px) {
+  .rail-scroll .rail { min-width: 640px; }
+  .rn-lbl { display: block !important; }
+}
+.rail-scroll { padding: 46px 8px 0; margin: -42px -8px 18px; }

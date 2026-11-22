@@ -53,9 +53,16 @@ export function Bars({ scores, compare }) {
 
 export default function Test({ s, update, next }) {
   const mode = s.testBefore && Object.keys(s.vr).length >= 2 ? 'after' : 'before'
-  const [ans, setAns] = useState({})
+  // Аяқталмаған тесттің жауаптары сақталады: картамен басқа бөлімге кетіп, қайтып келгенде жоғалмайды
+  const DRAFT = 'ks-test-draft-' + mode
+  const [ans, setAnsRaw] = useState(() => { try { return JSON.parse(sessionStorage.getItem(DRAFT)) || {} } catch { return {} } })
+  const setAns = (fn) => setAnsRaw((a) => {
+    const n = typeof fn === 'function' ? fn(a) : fn
+    try { sessionStorage.setItem(DRAFT, JSON.stringify(n)) } catch { /* */ }
+    return n
+  })
   const [redo, setRedo] = useState(false)
-  const [started, setStarted] = useState(false)
+  const [started, setStarted] = useState(() => Object.keys(ans).length > 0)
   const result = mode === 'after' ? s.testAfter : s.testBefore
   const total = Object.keys(ans).length
 
@@ -65,6 +72,7 @@ export default function Test({ s, update, next }) {
     update(mode === 'after' ? { testAfter: sc } : { testBefore: sc })
     setRedo(false)
     setAns({})
+    try { sessionStorage.removeItem(DRAFT) } catch { /* */ }
   }
 
   if (result && !redo) {
