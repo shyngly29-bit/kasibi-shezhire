@@ -1,7 +1,7 @@
 // REAL TREE → DIGITAL UNIVERSE — «Кәсіби шежіре» кіріспе сахнасы (бір үздіксіз 3D-сахна)
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette, SMAA, TiltShift2 } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { useGLTF, PerformanceMonitor } from '@react-three/drei'
 import {
@@ -588,7 +588,8 @@ export default function TreeScene({ A, progress, progress2, onNavigate, onReady,
       dpr={dpr}
       frameloop={active ? 'always' : 'never'}
       camera={{ position: [0, 3.2, 33], fov: MOBILE ? 62 : 45, near: 0.1, far: 900 }}
-      gl={{ antialias: false, powerPreference: 'high-performance', stencil: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.05 }}
+      // Телефонда пост-эффект жоқ, сондықтан жеңіл аппараттық тегістеу (MSAA) қосылады; компьютерде — SMAA
+      gl={{ antialias: LITE, powerPreference: 'high-performance', stencil: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.05 }}
     >
       <PerformanceMonitor
         flipflops={4}
@@ -600,7 +601,11 @@ export default function TreeScene({ A, progress, progress2, onNavigate, onReady,
       {!LITE && (
         <EffectComposer multisampling={0}>
           <Bloom mipmapBlur levels={5} resolutionScale={0.5} luminanceThreshold={0.85} luminanceSmoothing={0.2} intensity={1.0} radius={0.7} />
+          {/* Кадр шеттерінде жұмсақ кинематографиялық бұлыңғырлық (тереңдік картасыз, бір өту — FPS-ке жеңіл) */}
+          <TiltShift2 blur={0.06} taper={0.6} start={[0.5, 0.0]} end={[0.5, 1.0]} samples={6} />
           <Vignette eskil={false} offset={0.28} darkness={0.5} />
+          {/* Шеттерді тегістеу (сатылы жиектер жоғалады), MSAA-дан әлдеқайда арзан */}
+          <SMAA />
         </EffectComposer>
       )}
     </Canvas>
