@@ -5,6 +5,7 @@ import Ornament from '../components/Ornament'
 import NextBranch from '../components/NextBranch'
 import GlassFolder from '@/components/ui/glass-folder-cards'
 import { landscapeDataURL } from '../intro/landscape'
+import AIBox from '../components/AIBox'
 
 export default function Shezhire({ s, update, next }) {
   const fam = s.family
@@ -83,6 +84,17 @@ export default function Shezhire({ s, update, next }) {
           )}
         </div>
       </div>
+
+      <AIBox
+        title="ЖИ: әулет кәсіптері 2040 жылы"
+        hint="Отбасы кәсіптерін енгізген соң, ЖИ олардың болашағын және сенің жаңа мамандықтарыңды түсіндіреді."
+        button="ЖИ-ден болашағын сұрау ✦"
+        task="shezhire"
+        disabled={!filled.length}
+        data={() => ({ relatives: filled.map((f) => ({ role: f.role, job: f.job })) })}
+        value={s.ai.shezhire}
+        onSave={(text) => update({ ai: { ...s.ai, shezhire: text } })}
+      />
 
       {/* Келесі бірюза-көк бұтақ: импульс өтеді → «Қызығушылық тесті» */}
       <NextBranch

@@ -618,3 +618,31 @@ html, body { overflow-x: clip; }
 .tj-grain { stroke-width: 12; }
 .tj-grain.b { stroke-width: 8; }
 .tj-twig-stem { stroke-width: 3.6; }
+
+/* ---------- ЖИ (Claude) ---------- */
+.ai-box, .chat { margin-top: 18px; display: grid; gap: 12px; }
+.ai-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ai-head h3 { margin: 0; }
+.ai-badge { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px; color: #fff; background: linear-gradient(135deg, #d97757, var(--gold)); }
+.ai-text p { margin: 0 0 0.6em; line-height: 1.55; }
+.ai-err { color: var(--bad); margin: 0; font-size: 0.9rem; }
+.ai-note { color: var(--muted); font-size: 0.78rem; }
+.ai-dots { display: inline-flex; gap: 4px; }
+.ai-dots i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.35; animation: aiDot 1s infinite; }
+.ai-dots i:nth-child(2) { animation-delay: 0.15s; } .ai-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes aiDot { 50% { opacity: 1; transform: translateY(-3px); } }
+.chat-profs { display: flex; gap: 8px; flex-wrap: wrap; }
+.pchip { border: 1px solid var(--line); background: var(--glass-strong); color: var(--ink); padding: 7px 14px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: 0.18s; }
+.pchip.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+.chat-log { max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 2px; overscroll-behavior: contain; }
+.msg { max-width: 86%; padding: 10px 14px; border-radius: 16px; line-height: 1.5; font-size: 0.95rem; }
+.msg p { margin: 0 0 0.45em; } .msg p:last-child { margin: 0; }
+.msg small { display: block; color: var(--teal); font-weight: 700; font-size: 0.72rem; margin-bottom: 4px; }
+.msg.user { align-self: flex-end; background: linear-gradient(135deg, var(--teal-2), var(--teal)); color: #fff; border-bottom-right-radius: 4px; }
+.msg.assistant { align-self: flex-start; background: rgba(255, 255, 255, 0.85); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.chat-form { display: flex; gap: 8px; }
+.chat-form input { flex: 1; min-width: 0; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: #fff; font: inherit; color: var(--ink); }
+.prompts-more { margin-top: 18px; }
+.prompts-more summary { cursor: pointer; font-weight: 700; color: var(--teal); margin-bottom: 12px; }
+@media (max-width: 560px) { .msg { max-width: 94%; } }
+@media print { .ai-box { break-inside: avoid; box-shadow: none; } }

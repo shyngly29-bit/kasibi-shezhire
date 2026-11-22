@@ -24,6 +24,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_AI_URL: ${{ vars.VITE_AI_URL }} # ЖИ сервері (Render) мекенжайы
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

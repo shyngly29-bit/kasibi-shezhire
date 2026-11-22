@@ -1,0 +1,19 @@
+# Render: «Кәсіби шежіре» ЖИ сервері (тек ai-server папкасы)
+services:
+  - type: web
+    name: kasibi-shezhire-ai
+    runtime: node
+    rootDir: ai-server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false # кілтті Render панелінде қолмен енгізесіз
+      - key: CLAUDE_MODEL
+        value: claude-opus-5-5
+      - key: ALLOWED_ORIGINS
+        value: https://shyngly29-bit.github.io,http://localhost:5180
+      - key: RATE_LIMIT
+        value: "30"
