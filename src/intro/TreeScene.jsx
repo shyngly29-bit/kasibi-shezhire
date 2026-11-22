@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
-import { Tree } from '@dgreenheck/ez-tree'
+import { useGLTF } from '@react-three/drei'
 import {
   NOISE, FOG, SkyDome, Hills, Meadow, Grass, RisingParticles,
   Panels, Architecture, Arches, DataStreams, DataRain, DataNodes, Beams, EnergyRings, TechFloor,
@@ -24,26 +24,6 @@ const C = (h) => new THREE.Color(h)
 const DN = `float dN(vec3 wp){ return n3(wp*0.9)*0.6 + clamp((wp.y - ${GROUND.toFixed(2)})/16.5, 0.0, 1.0)*0.4; }`
 
 // ---------------------------------------------------------------------------
-class SkTree extends Tree {
-  generate() { this.skeleton = []; this.leafPts = []; super.generate() }
-  generateBranchIndices(off, b) {
-    super.generateBranchIndices(off, b)
-    const v = this.branches.verts
-    const N = b.segmentCount + 1
-    const pts = [], radii = []
-    for (let r = 0; r <= b.sectionCount; r++) {
-      const c = new THREE.Vector3()
-      for (let k = 0; k < b.segmentCount; k++) { const i = (off + r * N + k) * 3; c.x += v[i]; c.y += v[i + 1]; c.z += v[i + 2] }
-      c.divideScalar(b.segmentCount)
-      const i0 = (off + r * N) * 3
-      radii.push(Math.hypot(v[i0] - c.x, v[i0 + 1] - c.y, v[i0 + 2] - c.z))
-      pts.push(c)
-    }
-    this.skeleton.push({ level: b.level, pts, radii })
-  }
-  generateLeaf(o, q) { this.leafPts?.push(o.clone()); super.generateLeaf(o, q) }
-}
-
 // Табиғи PBR-материалды кеңейту: жел, еріту (табиғи қабат жоғалады), қабықтағы энергия тамырлары, суық реңк
 function patchNature(mat, key, U, vein) {
   mat.userData.u = U
@@ -70,57 +50,59 @@ function patchNature(mat, key, U, vein) {
   mat.needsUpdate = true
 }
 
+// Poly Haven «Island Tree 02» (CC0) GLB моделі: табиғи PBR қабат + сол геометриядағы голографиялық қабат
+const TREE_URL = import.meta.env.BASE_URL + 'models/tree.glb'
+useGLTF.preload(TREE_URL)
+
+function worldPoints(mesh, step = 1) {
+  const p = mesh.geometry.attributes.position
+  const out = []
+  const v = new THREE.Vector3()
+  for (let i = 0; i < p.count; i += step) out.push(v.fromBufferAttribute(p, i).applyMatrix4(mesh.matrixWorld).clone())
+  return out
+}
+
 function useTrees(U) {
+  const gltf = useGLTF(TREE_URL)
   return useMemo(() => {
-    const t = new SkTree()
-    t.loadPreset('Oak Large')
-    t.options.seed = 2040
-    t.generate()
-    const box = new THREE.Box3().setFromObject(t)
+    const root = gltf.scene
+    const meshes = []
+    root.traverse((o) => { if (o.isMesh) meshes.push(o) })
+    const box = new THREE.Box3().setFromObject(root)
     const s = H / (box.max.y - box.min.y)
-    const dy = -box.min.y
-    t.scale.setScalar(s)
-    t.position.y = dy * s + GROUND
-    const toW = (p) => p.clone().add(new THREE.Vector3(0, dy, 0)).multiplyScalar(s).add(new THREE.Vector3(0, GROUND, 0))
-    const skeleton = t.skeleton.map((b) => ({ level: b.level, pts: b.pts.map(toW), radii: b.radii.map((r) => r * s) }))
-    const leaves = t.leafPts.map(toW)
+    const c = box.getCenter(new THREE.Vector3())
+    root.scale.setScalar(s)
+    root.position.set(-c.x * s, GROUND - box.min.y * s, -c.z * s)
+    root.updateMatrixWorld(true)
 
-    // 1) Табиғи ағаш: PBR қабық (түс, нормаль, AO, кедір-бұдырлық) + жапырақтар
-    const ob = t.branchesMesh.material
-    const bark = new THREE.MeshStandardMaterial({ map: ob.map, normalMap: ob.normalMap, aoMap: ob.aoMap, roughnessMap: ob.roughnessMap, color: ob.color, roughness: 0.95, metalness: 0, normalScale: new THREE.Vector2(1.4, 1.4) })
-    patchNature(bark, 'bark', U, 1)
-    t.branchesMesh.material = bark
-    const ol = t.leavesMesh.material
-    const leafN = new THREE.MeshStandardMaterial({ map: ol.map, color: ol.color, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.75, metalness: 0 })
-    patchNature(leafN, 'leaf', U, 0.35)
-    t.leavesMesh.material = leafN
-    t.branchesMesh.castShadow = t.leavesMesh.castShadow = !LITE
-    t.branchesMesh.receiveShadow = !LITE
+    const kind = (m) => (/leaves/i.test(m.material.name) ? 'leaf' : /branch/i.test(m.material.name) ? 'branch' : 'trunk')
 
-    // 2) Голографиялық ағаш — сол геометрия, табиғи қабат еріген жерде пайда болады
+    // Голографиялық қабық: әлем координатасындағы талшықтар (UV-ге тәуелсіз)
     const holoBark = new THREE.ShaderMaterial({
+      side: THREE.DoubleSide,
       uniforms: { ...U },
-      vertexShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vWP;
-        void main(){ vUv = uv; vec4 wp = modelMatrix*vec4(position,1.0); vWP = wp.xyz; vN = normalize(mat3(modelMatrix)*normal); gl_Position = projectionMatrix*viewMatrix*wp; }`,
-      fragmentShader: `uniform float uTime; uniform float uDis; varying vec2 vUv; varying vec3 vN; varying vec3 vWP; ${NOISE} ${DN} ${FOG}
+      vertexShader: `varying vec3 vN; varying vec3 vWP;
+        void main(){ vec4 wp = modelMatrix*vec4(position,1.0); vWP = wp.xyz; vN = normalize(mat3(modelMatrix)*normal); gl_Position = projectionMatrix*viewMatrix*wp; }`,
+      fragmentShader: `uniform float uTime; uniform float uDis; varying vec3 vN; varying vec3 vWP; ${NOISE} ${DN} ${FOG}
         void main(){
           float dd = dN(vWP); if (dd >= uDis) discard;
           vec3 N = normalize(vN); vec3 V = normalize(cameraPosition - vWP);
-          float fres = pow(1.0 - max(dot(N, V), 0.0), 2.2);
+          float fres = pow(1.0 - abs(dot(N, V)), 2.2);
           float dif = 0.4 + 0.6*max(dot(N, normalize(vec3(0.2, 1.0, 0.35))), 0.0);
-          float lane = floor(vUv.x*10.0);
-          float fib = smoothstep(0.78, 1.0, abs(sin(vUv.x*6.2831*10.0 + vWP.y*0.45)));
-          float mesh = smoothstep(0.92, 1.0, abs(sin(vWP.y*5.0))) * 0.6;
+          float ang = atan(vWP.z, vWP.x);
+          float lane = floor(ang*6.0);
+          float fib = smoothstep(0.8, 1.0, abs(sin(ang*36.0 + vWP.y*0.5 + n3(vWP*0.6)*4.0)));
+          float mesh = smoothstep(0.93, 1.0, abs(sin(vWP.y*5.0))) * 0.6;
           float flow = pow(fract(vWP.y*0.22 - uTime*0.55 + h1(lane)*0.8), 7.0);
           float gold = step(0.95, h1(lane*7.0 + floor(vWP.y*0.4))) * flow;
-          vec3 col = vec3(0.02, 0.07, 0.12)*dif + vec3(0.0, 0.85, 1.0)*(0.25 + flow*2.6)*(fib + mesh) + vec3(0.1, 0.9, 0.82)*fres*1.5 + vec3(1.0,0.78,0.42)*gold*3.0;
+          vec3 col = vec3(0.02, 0.07, 0.12)*dif + vec3(0.0, 0.85, 1.0)*(0.25 + flow*2.6)*(fib + mesh) + vec3(0.1, 0.9, 0.82)*fres*1.6 + vec3(1.0,0.78,0.42)*gold*3.0;
           col += vec3(0.0, 0.95, 1.0) * smoothstep(uDis - 0.06, uDis, dd) * 2.5;
           gl_FragColor = vec4(applyFog(col, vWP), 1.0);
         }`,
     })
-    const holoLeaf = new THREE.ShaderMaterial({
-      transparent: true, side: THREE.DoubleSide, toneMapped: false,
-      uniforms: { ...U, uMap: { value: ol.map } },
+    const holoLeaf = (map) => new THREE.ShaderMaterial({
+      side: THREE.DoubleSide, toneMapped: false,
+      uniforms: { ...U, uMap: { value: map } },
       vertexShader: `uniform float uTime; varying vec2 vUv; varying vec3 vWP;
         void main(){ vUv = uv; vec4 wp = modelMatrix*vec4(position,1.0); wp.x += sin(uTime*1.3 + wp.y*0.5 + wp.z*0.3)*0.05; vWP = wp.xyz; gl_Position = projectionMatrix*viewMatrix*wp; }`,
       fragmentShader: `uniform sampler2D uMap; uniform float uTime; uniform float uDis; varying vec2 vUv; varying vec3 vWP; ${NOISE} ${DN} ${FOG}
@@ -128,24 +110,66 @@ function useTrees(U) {
           vec4 t = texture2D(uMap, vUv); if (t.a < 0.45) discard;
           float dd = dN(vWP); if (dd >= uDis) discard;
           float r = h3(floor(vWP*2.2));
-          float edge = smoothstep(0.2, 0.0, abs(t.a - 0.55));
-          vec3 c = mix(vec3(0.03,0.32,0.38), vec3(0.0,0.45,0.68), r) * (0.5 + 0.55*t.g) + vec3(0.2,0.95,1.0)*edge*0.6;
+          vec3 c = mix(vec3(0.03,0.32,0.38), vec3(0.0,0.45,0.68), r) * (0.55 + 0.6*t.g);
           float tw = step(0.975, r) * (0.55 + 0.45*sin(uTime*3.0 + r*40.0));
           c = mix(c, vec3(1.0,0.78,0.42)*2.4, tw);
           c += vec3(0.0,0.95,1.0) * smoothstep(uDis - 0.06, uDis, dd) * 2.0;
-          gl_FragColor = vec4(applyFog(c, vWP), 0.92);
+          gl_FragColor = vec4(applyFog(c, vWP), 1.0);
         }`,
     })
-    const hb = new THREE.Mesh(t.branchesMesh.geometry, holoBark)
-    const hl = new THREE.Mesh(t.leavesMesh.geometry, holoLeaf)
-    t.add(hb, hl)
 
-    // Бөлім түйіндері — тәждегі 1-деңгей бұтақ ұштары
-    const tips = skeleton.filter((b) => b.level === 1).map((b) => b.pts[b.pts.length - 1]).filter((p) => p.y > H * 0.55)
-    tips.sort((a, b) => Math.atan2(a.x, a.z) - Math.atan2(b.x, b.z))
-    const nodes = SECTIONS.map((_, i) => tips[Math.floor(((i + 0.5) / SECTIONS.length) * tips.length)] || new THREE.Vector3(Math.sin(i) * 5, H * 0.8, Math.cos(i) * 5))
-    return { tree: t, skeleton, leaves, nodes }
-  }, [U])
+    const parts = {}
+    meshes.forEach((m, i) => {
+      const k = kind(m)
+      parts[k] = m
+      const mat = m.material
+      if (k === 'leaf') { mat.transparent = false; mat.alphaTest = 0.5; mat.depthWrite = true }
+      mat.side = THREE.DoubleSide
+      patchNature(mat, k + i, U, k === 'leaf' ? 0.35 : 1)
+      m.castShadow = !LITE
+      m.receiveShadow = !LITE
+      const h = new THREE.Mesh(m.geometry, k === 'leaf' ? holoLeaf(mat.map) : holoBark)
+      h.position.copy(m.position); h.quaternion.copy(m.quaternion); h.scale.copy(m.scale)
+      m.parent.add(h)
+    })
+    root.updateMatrixWorld(true)
+
+    // Діңнің осі: биіктік бойынша кесінділердің центрі мен радиусы → энергия талшықтары үшін
+    const trunkPts = worldPoints(parts.trunk || meshes[0], 1)
+    const ys = trunkPts.map((p) => p.y)
+    const y0 = Math.min(...ys)
+    const y1 = y0 + (Math.max(...ys) - y0) * 0.72
+    const bins = 14
+    const pts = [], radii = []
+    for (let b = 0; b <= bins; b++) {
+      const ya = y0 + ((y1 - y0) * b) / bins
+      const sel = trunkPts.filter((p) => Math.abs(p.y - ya) < (y1 - y0) / bins)
+      if (!sel.length) continue
+      const cc = sel.reduce((a, p) => a.add(p), new THREE.Vector3()).divideScalar(sel.length)
+      cc.y = ya
+      pts.push(cc)
+      radii.push(sel.reduce((a, p) => a + Math.hypot(p.x - cc.x, p.z - cc.z), 0) / sel.length)
+    }
+    const skeleton = [{ level: 0, pts, radii }]
+
+    // Тәждегі жапырақ нүктелері (ұшқындар үшін)
+    const leafMesh = parts.leaf || meshes[meshes.length - 1]
+    const leaves = worldPoints(leafMesh, Math.max(1, Math.floor(leafMesh.geometry.attributes.position.count / 6000)))
+
+    // 6 бөлім түйіні: бұтақтардың жоғарғы бөлігінен, бұрыш бойынша 6 сектор
+    const br = worldPoints(parts.branch || meshes[0], 7)
+    const ymin = Math.min(...br.map((p) => p.y)), ymax = Math.max(...br.map((p) => p.y))
+    const cand = br.filter((p) => p.y > ymin + (ymax - ymin) * 0.55)
+    const nodes = SECTIONS.map((_, i) => {
+      const a0 = -Math.PI + (i / SECTIONS.length) * Math.PI * 2
+      const a1 = a0 + (Math.PI * 2) / SECTIONS.length
+      const sec = cand.filter((p) => { const a = Math.atan2(p.x, p.z); return a >= a0 && a < a1 })
+      sec.sort((a, b) => Math.hypot(b.x, b.z) * 0.6 + b.y * 0.4 - (Math.hypot(a.x, a.z) * 0.6 + a.y * 0.4))
+      return (sec[Math.floor(sec.length * 0.15)] || new THREE.Vector3(Math.sin(a0) * 5, H * 0.8, Math.cos(a0) * 5)).clone()
+    })
+    nodes.sort((a, b) => b.z - a.z)
+    return { tree: root, skeleton, leaves, nodes }
+  }, [gltf, U])
 }
 
 // Діңді орайтын энергия талшықтары (оптоволокно) — энергия тамырдан жоғары көтеріледі
@@ -436,7 +460,6 @@ function Director({ U, S, A, progress, trees, lights }) {
     lights.hemi.current.intensity = THREE.MathUtils.lerp(1.5, 0.7, s.envDig)
     lights.key.current.intensity = s.cool * 1.6
     lights.rim.current.intensity = s.envDig * 2.2
-    trees.tree.update(clock.elapsedTime)
   })
   return null
 }

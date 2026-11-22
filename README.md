@@ -7,3 +7,7 @@
 - Мәтіндер мен деректер: `src/data.js`
 - Іске қосу: `npm install`, `npm run dev`
 - Жариялау: `main` тармағына push → GitHub Actions автоматты түрде GitHub Pages-ке шығарады.
+
+## 3D-модель ағаштың дереккөзі
+- «Island Tree 02», Poly Haven (polyhaven.com), лицензия **CC0** (еркін қолдануға болады).
+- Сығу: `node scripts/optimize-tree.mjs <input.gltf> public/models/tree.glb 0.3` (meshopt + WebP, ~6 МБ).
