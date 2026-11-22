@@ -70,11 +70,11 @@ export function Hot({ id, act, label, children, ...props }) {
   )
 }
 
-export function Scene({ camera, target, origin, bg = '#0f2236', children }) {
+export function Scene({ camera, target, origin, bg = '#e6eef3', children }) {
   return (
     <Canvas camera={{ position: camera, fov: 55 }} dpr={[1, 2]}>
       <color attach="background" args={[bg]} />
-      <hemisphereLight args={['#dfefff', '#2a2a2a', 0.9]} />
+      <hemisphereLight args={['#ffffff', '#b9a98a', 1.1]} />
       <directionalLight position={[3, 6, 4]} intensity={1.4} />
       <XR store={store}>
         <XROrigin position={origin || [camera[0], 0, camera[2]]} />

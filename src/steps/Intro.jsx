@@ -16,7 +16,7 @@ export default function Intro({ s, update, next }) {
     <div className="intro">
       <div className="hero">
         <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          Ата-бабаң кәсібінен —<br /><span>болашақ мамандығыңа</span>
+          Ата-бабаң кәсібінен<br /><span>болашақ мамандығыңа</span>
         </motion.h1>
         <p>Отбасыңның тарихын зертте, мамандықтарды VR-да байқап көр және жасанды интеллектпен болашақтағы өзіңмен сөйлес.</p>
       </div>

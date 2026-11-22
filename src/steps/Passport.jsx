@@ -22,7 +22,7 @@ function Portfolio({ s }) {
           key={f.label + f.files.length}
           label={f.label}
           meta={f.files.length ? `${f.files.length} құжат · ашу үшін бас` : f.empty}
-          tone="dark" art={f.art} seed={f.seed} action="none" width={w}
+          tone="light" art={f.art} seed={f.seed} action="none" width={w}
           appearDelay={i * 140}
           files={f.files.length ? f.files : [{ name: f.empty }]}
         />
