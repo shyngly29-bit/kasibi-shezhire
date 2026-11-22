@@ -646,3 +646,6 @@ html, body { overflow-x: clip; }
 .prompts-more summary { cursor: pointer; font-weight: 700; color: var(--teal); margin-bottom: 12px; }
 @media (max-width: 560px) { .msg { max-width: 94%; } }
 @media print { .ai-box { break-inside: avoid; box-shadow: none; } }
+.chat-suggest { display: flex; gap: 6px; flex-wrap: wrap; }
+.chat-suggest .pchip { font-weight: 500; font-size: 0.8rem; background: var(--teal-soft); border-color: transparent; }
+.chat-suggest .pchip:hover { border-color: var(--teal); }

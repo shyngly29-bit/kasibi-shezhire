@@ -5,10 +5,11 @@ import { aiEnabled, askAI, paragraphs } from '../ai'
 export default function AIBox({ title, hint, button, task, data, value, onSave, disabled }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [slow, setSlow] = useState(false)
   if (!aiEnabled && !value) return null
   const run = async () => {
-    setBusy(true); setErr('')
-    try { onSave(await askAI(task, data())) } catch (e) { setErr(e.message) } finally { setBusy(false) }
+    setBusy(true); setErr(''); setSlow(false)
+    try { onSave(await askAI(task, data(), { onSlow: () => setSlow(true), fresh: !!value })) } catch (e) { setErr(e.message) } finally { setBusy(false); setSlow(false) }
   }
   return (
     <div className="card ai-box">
@@ -21,6 +22,7 @@ export default function AIBox({ title, hint, button, task, data, value, onSave, 
       ) : (
         <p className="muted">{hint}</p>
       )}
+      {busy && slow && <p className="muted">Сервер оянып жатыр — алғашқы жауап 30–50 секундқа дейін созылуы мүмкін…</p>}
       {err && <p className="ai-err">{err}</p>}
       {aiEnabled && (
         <div className="row-btns no-print">

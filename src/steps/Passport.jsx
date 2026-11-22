@@ -3,6 +3,7 @@ import { topTypes } from '../store'
 import { Bars } from './Test'
 import GlassFolder from '@/components/ui/glass-folder-cards'
 import AIBox from '../components/AIBox'
+import { profileOf } from '../ai'
 
 const ARTS = { electric: 'ember', oil: 'dusk', nurse: 'glacier', drone: 'verdant' }
 
@@ -87,13 +88,7 @@ export default function Passport({ s, update, go, reset }) {
         hint="Тест, VR-сынама және таңдаған мамандықтарың бойынша ЖИ жеке қорытынды жазады — ол паспортқа басылады."
         button="ЖИ қорытындысын алу ✦"
         task="passport"
-        data={() => ({
-          name: s.student.name, grade: s.student.grade,
-          types: top.map((k) => RIASEC[k].name),
-          pick3: s.pick3.map((id) => PROFESSIONS.find((x) => x.id === id)?.name).filter(Boolean),
-          vr: Object.entries(s.vr).map(([id, r]) => ({ title: VR_INFO[id]?.title || id, score: r.score })),
-          family: s.family.filter((f) => f.job).map((f) => `${f.role}: ${f.job}`),
-        })}
+        data={() => ({ profile: profileOf(s) })}
         value={s.ai.summary}
         onSave={(text) => update({ ai: { ...s.ai, summary: text } })}
       />

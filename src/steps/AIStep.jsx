@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { aiPrompts, PROFESSIONS } from '../data'
-import { aiEnabled, askAI, paragraphs } from '../ai'
+import { aiEnabled, askAI, paragraphs, profileOf } from '../ai'
+
+const SUGGEST = ['Сенің бір жұмыс күнің қалай өтеді?', 'Мектепте қай пәнді жақсы оқуым керек?', 'Ақтөбеде бұл мамандыққа қайда оқуға болады?', 'ЖИ сенің жұмысыңды алмастыра ма?', 'Менің отбасымның кәсібі бұл жұмысқа көмектесе ме?']
 
 // «2040 жылдан сұхбат» — Claude болашақтағы маман рөлінде
 function Chat({ s, update }) {
@@ -10,6 +12,7 @@ function Chat({ s, update }) {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [slow, setSlow] = useState(false)
   const box = useRef(null)
   useEffect(() => { box.current?.scrollTo({ top: box.current.scrollHeight, behavior: 'smooth' }) }, [msgs, busy])
 
@@ -17,13 +20,13 @@ function Chat({ s, update }) {
     const t = (text ?? input).trim()
     if (busy || !t) return
     const next = [...msgs, { role: 'user', content: t }]
-    setMsgs(next); setInput(''); setBusy(true); setErr('')
+    setMsgs(next); setInput(''); setBusy(true); setErr(''); setSlow(false)
     try {
-      const answer = await askAI('interview', { profession: prof, name: s.student.name, grade: s.student.grade, messages: next })
+      const answer = await askAI('interview', { profession: prof, profile: profileOf(s), messages: next }, { onSlow: () => setSlow(true) })
       const all = [...next, { role: 'assistant', content: answer }]
       setMsgs(all)
       update({ ai: { ...s.ai, chat: all.slice(-20), chatProf: prof, done: s.ai.done.includes(0) ? s.ai.done : [...s.ai.done, 0] } })
-    } catch (e) { setErr(e.message); setMsgs(msgs); setInput(t) } finally { setBusy(false) }
+    } catch (e) { setErr(e.message); setMsgs(msgs); setInput(t) } finally { setBusy(false); setSlow(false) }
   }
   const restart = (p) => { setProf(p); setMsgs([]); update({ ai: { ...s.ai, chat: [], chatProf: p } }) }
 
@@ -46,11 +49,18 @@ function Chat({ s, update }) {
             {paragraphs(m.content).map((p, j) => <p key={j}>{p}</p>)}
           </div>
         ))}
-        {busy && <div className="msg assistant"><span className="ai-dots"><i /><i /><i /></span></div>}
+        {busy && <div className="msg assistant"><span className="ai-dots"><i /><i /><i /></span>{slow && <small style={{ marginTop: 6 }}>Сервер оянып жатыр, сәл күте тұр…</small>}</div>}
       </div>
       {err && <p className="ai-err">{err}</p>}
       {!msgs.length && (
         <div className="row-btns"><button className="btn" onClick={() => send('Сәлем! Сен болашақтағы менсің бе? Жұмыс күніңді айтып берші.')} disabled={busy}>Сұхбатты бастау →</button></div>
+      )}
+      {msgs.length > 0 && !busy && (
+        <div className="chat-suggest">
+          {SUGGEST.filter((q) => !msgs.some((m) => m.content === q)).slice(0, 3).map((q) => (
+            <button key={q} className="pchip" onClick={() => send(q)}>{q}</button>
+          ))}
+        </div>
       )}
       <form className="chat-form" onSubmit={(e) => { e.preventDefault(); send() }}>
         <input value={input} onChange={(e) => setInput(e.target.value)} maxLength={600} placeholder="Сұрағыңды жаз… (мыс.: қай пәнді жақсы оқуым керек?)" />

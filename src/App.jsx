@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppState } from './store'
+import { wakeAI } from './ai'
 import { BRANCHES } from './branches'
 import BranchRail from './components/BranchRail'
 import NavBar from './components/NavBar'
@@ -29,6 +30,7 @@ const fromHash = () => {
 }
 
 export default function App() {
+  useEffect(() => { const t = setTimeout(wakeAI, 1500); return () => clearTimeout(t) }, [])
   const [s, update, reset] = useAppState()
   const [step, setStep] = useState(fromHash)
   const go = (i) => {
