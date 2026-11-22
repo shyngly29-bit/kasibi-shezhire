@@ -52,6 +52,7 @@ export function panelTexture(kind, seed = 1) {
   g.fillRect(W - 120, 20, 100, 5)
   const x0 = 24, y0 = 60, w = W - 48, h = H - 90
   g.lineWidth = 2
+  if (kind === 'frame') return tex(c)
   if (kind === 'bars') {
     const n = 14
     for (let i = 0; i < n; i++) {
