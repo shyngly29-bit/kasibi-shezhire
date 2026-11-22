@@ -12,7 +12,7 @@ export default function AIStep({ s, update, next }) {
   return (
     <div>
       <div className="head">
-        <h2>🤖 2040 жылдан сұхбат</h2>
+        <h2>2040 жылдан сұхбат</h2>
         <p>Промптты көшіріп, ChatGPT немесе Gemini-ге қой. Жауапты сыни тұрғыдан оқы: ЖИ қателесуі мүмкін!</p>
       </div>
       <div className="prompts">

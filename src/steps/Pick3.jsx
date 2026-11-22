@@ -11,7 +11,7 @@ export default function Pick3({ s, update, next }) {
   return (
     <div>
       <div className="head">
-        <h2>🎯 Pick3 — менің 3 мамандығым</h2>
+        <h2>Pick3 — менің 3 мамандығым</h2>
         <p>Ұсыныс: біреуі — <b>шежіреңнен</b>, біреуі — <b>тест нәтижесіңнен</b>, біреуі — <b>болашақ мамандығы</b>. Таңдалды: {s.pick3.length}/3</p>
       </div>
       <div className="chips">

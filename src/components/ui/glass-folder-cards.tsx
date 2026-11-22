@@ -27,7 +27,10 @@ import * as React from "react"
  * Self-contained: React is the only import. No CSS file, no images, no fonts.
  */
 
-export type ArtPreset = "aurora" | "ember" | "dusk" | "glacier" | "verdant"
+export type ArtPreset =
+  | "aurora" | "ember" | "dusk" | "glacier" | "verdant"
+  // Кәсіби шежіре бөлімдерінің тақырыптық суреттері
+  | "heritage" | "digital-test" | "pick3" | "vr" | "future" | "passport"
 
 export type ArtRecipe = {
   /** `marble` folds the colours through each other; `streak` pulls them into a long exposure. */
@@ -156,6 +159,65 @@ export const ART_PRESETS: Record<ArtPreset, ArtRecipe> = {
     angle: 2.1,
     gloss: 0.5,
     veins: 0.5,
+  },
+  // Шежіре: табиғи изумруд пен алтын
+  heritage: {
+    style: "marble",
+    colors: ["#0d1a14", "#315c47", "#6f8f6a", "#1d2a20", "#a88a4a", "#e6d2a0", "#f8f1df"],
+    scale: 0.72,
+    warp: 3.0,
+    angle: 1.4,
+    gloss: 0.45,
+    veins: 0.4,
+  },
+  // Тест: бұтақтар арқылы өтетін цифрлық деректер ағыны
+  "digital-test": {
+    style: "marble",
+    colors: ["#062f38", "#0c9fa5", "#43d3d8", "#327eff", "#c7e9f4"],
+    scale: 0.7,
+    warp: 2.8,
+    gloss: 0.45,
+    veins: 0.25,
+  },
+  // Pick3: көк пен жұмсақ күлгін
+  pick3: {
+    style: "streak",
+    colors: ["#eef2fb", "#9fb8f2", "#3379f2", "#1c2452", "#8777c7", "#d9d2f2"],
+    scale: 0.7,
+    warp: 1.6,
+    angle: -0.4,
+    gloss: 0.25,
+    veins: 0,
+  },
+  // VR: маржан мен рубин
+  vr: {
+    style: "marble",
+    colors: ["#1a0a10", "#5a1f33", "#a94765", "#2a1216", "#e56d51", "#f6b49c", "#fde9df"],
+    scale: 0.66,
+    warp: 3.2,
+    angle: -0.6,
+    gloss: 0.5,
+    veins: 0.45,
+  },
+  // 2040: көгілдір мен лаванда
+  future: {
+    style: "streak",
+    colors: ["#f2f5fc", "#a9c9ea", "#168dc8", "#20244a", "#7a83da", "#e1e3f8"],
+    scale: 0.7,
+    warp: 1.5,
+    angle: 0.5,
+    gloss: 0.2,
+    veins: 0,
+  },
+  // Паспорт: бірюза мен күміс
+  passport: {
+    style: "marble",
+    colors: ["#0b1a1c", "#1b9d8d", "#7fd0c4", "#25363a", "#748a91", "#d9e2e4", "#f6f8f8"],
+    scale: 0.72,
+    warp: 2.6,
+    angle: 0.9,
+    gloss: 0.5,
+    veins: 0.3,
   },
 }
 

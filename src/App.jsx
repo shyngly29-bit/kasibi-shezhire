@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppState } from './store'
+import { BRANCHES } from './branches'
+import BranchRail from './components/BranchRail'
 import Intro from './steps/Intro'
 import Shezhire from './steps/Shezhire'
 import Test from './steps/Test'
@@ -36,9 +38,24 @@ export default function App() {
   }
   const props = { s, update, next, go, reset }
   const id = STEPS[step].id
+  const branch = BRANCHES[id === 'vr' ? 'vr' : id]
+  const mainRef = useRef(null)
+
+  // Карточкалардың кезекпен шығуы: y 35px → 0, 0.8s, stagger 0.1s, power3.out
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const t = setTimeout(() => {
+      const els = mainRef.current?.querySelectorAll('.card, .q, .chip, .vr-card, .path-item, .prompt, .gf-root') || []
+      els.forEach((el, i) => el.animate(
+        [{ opacity: 0, transform: 'translateY(35px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 800, delay: Math.min(i, 12) * 100, easing: 'cubic-bezier(.215,.61,.355,1)', fill: 'backwards' },
+      ))
+    }, 60)
+    return () => clearTimeout(t)
+  }, [step])
 
   return (
-    <div className="app">
+    <div className="app" style={{ '--b1': branch.c1, '--b2': branch.c2 }} data-branch={id}>
       <header className="top">
         <div className="brand" onClick={() => go(0)}>
           <span className="logo">ш</span>
@@ -56,14 +73,16 @@ export default function App() {
           ))}
         </nav>
       </header>
-      <main>
+      <main ref={mainRef}>
+        {id !== 'intro' && <BranchRail step={step} done={done} onGo={go} />}
+        {id !== 'intro' && <motion.div key={'flash' + step} className="branch-flash" initial={{ x: '-100%', opacity: 0.9 }} animate={{ x: '100%', opacity: 0 }} transition={{ duration: 1, ease: [0.215, 0.61, 0.355, 1] }} />}
         <AnimatePresence mode="wait">
           <motion.section
             key={id}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
+            transition={{ duration: 0.45, ease: [0.215, 0.61, 0.355, 1] }}
           >
             {id === 'intro' && <Intro {...props} />}
             {id === 'shezhire' && <Shezhire {...props} />}

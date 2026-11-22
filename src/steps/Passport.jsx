@@ -11,9 +11,9 @@ function Portfolio({ s }) {
   const vr = Object.entries(s.vr).map(([id, r]) => ({ name: VR_INFO[id].title, meta: r.score + '%', art: ARTS[id] }))
   const picks = s.pick3.map((id) => ({ name: PROFESSIONS.find((p) => p.id === id)?.name || id, meta: '🎯' }))
   const folders = [
-    { label: 'Шежіре', art: 'verdant', seed: 5, files: fam, empty: 'Шежіре толтырылмаған' },
-    { label: 'VR-сынамалар', art: 'ember', seed: 11, files: vr, empty: 'Сынама өтілмеген' },
-    { label: 'Менің 3 мамандығым', art: 'aurora', seed: 3, files: picks, empty: 'Таңдалмаған' },
+    { label: 'Шежіре', art: 'heritage', seed: 5, files: fam, empty: 'Шежіре толтырылмаған' },
+    { label: 'VR-сынамалар', art: 'vr', seed: 11, files: vr, empty: 'Сынама өтілмеген' },
+    { label: 'Менің 3 мамандығым', art: 'pick3', seed: 3, files: picks, empty: 'Таңдалмаған' },
   ]
   return (
     <div className="portfolio no-print">
@@ -38,7 +38,7 @@ export default function Passport({ s, go, reset }) {
   return (
     <div className="passport">
       <div className="head no-print">
-        <h2>📘 Кәсіби паспорт</h2>
+        <h2>Кәсіби паспорт</h2>
         <p>Барлық нәтижең бір жерде. Папканы басып аш — ішіндегі құжаттар шығады. Төменде басып шығаруға арналған паспорт.</p>
       </div>
       <Portfolio s={s} />

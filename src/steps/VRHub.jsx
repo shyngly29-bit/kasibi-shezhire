@@ -26,7 +26,7 @@ export default function VRHub({ s, update, next }) {
   return (
     <div>
       <div className="head">
-        <h2>🥽 VR-кәсіби сынама</h2>
+        <h2>VR-кәсіби сынама</h2>
         <p>Мамандықты виртуалды түрде байқап көр. Экранда тінтуірмен немесе VR-көзілдірікпен ойнауға болады. Әр сынама үшін паспортқа мөр мен жетон беріледі.</p>
       </div>
       <div className="vr-grid">
