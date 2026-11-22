@@ -3,21 +3,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
-import { useGLTF } from '@react-three/drei'
+import { useGLTF, PerformanceMonitor } from '@react-three/drei'
 import {
   NOISE, FOG, SkyDome, Hills, Meadow, Grass, Flowers, RisingParticles,
   Panels, Architecture, Arches, DataStreams, DataRain, DataNodes, Beams, EnergyRings, TechFloor,
 } from './environment'
 import { platformTexture, labelTexture, glowTexture } from './textures'
 import { makeJourney, LightPath, Portal, AscentSparks } from './journey'
-import { DepthOfField } from '@react-three/postprocessing'
 
-// Пост-эффекттер үшін ортақ мән (Director жазады, DofDriver оқиды)
-const FX = { bokeh: 0 }
-function DofDriver({ dof }) {
-  useFrame(() => { if (dof.current) dof.current.bokehScale = FX.bokeh })
-  return null
-}
+
 import { BRANCHES, ORDER } from '../branches'
 
 const H = 16
@@ -132,6 +126,7 @@ function useTrees(U) {
     })
 
     const parts = {}
+    const natMeshes = [], holoMeshes = []
     meshes.forEach((m, i) => {
       const k = kind(m)
       parts[k] = m
@@ -145,6 +140,7 @@ function useTrees(U) {
       const h = new THREE.Mesh(m.geometry, k === 'leaf' ? holoLeaf(mat.map) : holoBark)
       h.position.copy(m.position); h.quaternion.copy(m.quaternion); h.scale.copy(m.scale)
       m.parent.add(h)
+      natMeshes.push(m); holoMeshes.push(h)
     })
     root.updateMatrixWorld(true)
 
@@ -182,7 +178,7 @@ function useTrees(U) {
       return (sec[Math.floor(sec.length * 0.15)] || new THREE.Vector3(Math.sin(a0) * 5, H * 0.8, Math.cos(a0) * 5)).clone()
     })
     nodes.sort((a, b) => b.z - a.z)
-    return { tree: root, skeleton, leaves, nodes, branchPts: br }
+    return { tree: root, skeleton, leaves, nodes, branchPts: br, natMeshes, holoMeshes }
   }, [gltf, U])
 }
 
@@ -456,17 +452,22 @@ function CameraRig({ S, J }) {
 }
 
 // Барлық фазаларды айналдыруға байланыстыратын «режиссер»: жарық, тұман, материалдар
-function Director({ U, S, A, progress, progress2, trees, lights }) {
+function Director({ U, S, A, progress, progress2, trees, lights, groups }) {
   const { scene, gl } = useThree()
+  const frame = useRef(0)
   const tmp = useMemo(() => ({ warm: C('#ffd9a0'), cold: C('#7fc4ff'), fogN: C('#d9dde0'), fogD: C('#06263d'), ivory: C('#f5f2ea'), hemN: C('#cfe6ff'), hemD: C('#0a3550'), grN: C('#5b6b3a'), grD: C('#04121f') }), [])
   useFrame(({ clock }) => {
     const s = S.current
     const p = progress.get()
     s.p = p
+    if (import.meta.env.DEV) {
+      // өнімділік өлшемі: бір кадрдағы барлық өтулер (пост-эффекттермен бірге)
+      if (window.__gl !== gl) { window.__gl = gl; gl.info.autoReset = false }
+      window.__frameInfo = { calls: gl.info.render.calls, tris: gl.info.render.triangles }
+      gl.info.reset()
+    }
     s.q = progress2 ? progress2.get() : 0
     s.light = ss(0.84, 0.99, s.q)
-    // бұтақ бойымен ұшқанда тереңдік фокусы (DOF) — алыстағы бұтақтар жұмсақ бұлыңғыр
-    FX.bokeh = ss(0.38, 0.5, s.q) * (1 - ss(0.78, 0.86, s.q)) * 2.2
     U.uLight.value = s.light
     U.uThin.value = ss(0.3, 0.42, s.q) * (1 - ss(0.86, 0.94, s.q))
     s.intro = A.current.intro
@@ -498,6 +499,20 @@ function Director({ U, S, A, progress, progress2, trees, lights }) {
     lights.hemi.current.intensity = THREE.MathUtils.lerp(1.5, 0.7, s.envDig)
     lights.key.current.intensity = s.cool * 1.6
     lights.rim.current.intensity = s.envDig * 2.2
+
+    // ===== Өнімділік: көрінбейтін нәрсе салынбайды =====
+    const g = groups
+    if (g.nature.current) g.nature.current.visible = s.envDig < 0.999 // табиғат цифрға толық ерігенде
+    if (g.digital.current) g.digital.current.visible = s.world > 0.002 || s.rise > 0.002
+    if (g.journey.current) g.journey.current.visible = s.q > 0.0005
+    if (g.fibers.current) g.fibers.current.visible = s.energy > 0.001
+    trees.natMeshes.forEach((m) => { m.visible = s.dis < 1.04 })
+    trees.holoMeshes.forEach((m) => { m.visible = s.dis > 0.001 })
+    // Көлеңке: тек табиғи фазада және әр 3-ші кадрда (ағаш жайлап тербеледі — көзге білінбейді)
+    const shadowOn = !LITE && s.cool < 0.9
+    gl.shadowMap.autoUpdate = false
+    frame.current++
+    if (shadowOn && frame.current % 3 === 0) gl.shadowMap.needsUpdate = true
   })
   return null
 }
@@ -512,6 +527,7 @@ function Universe({ A, progress, progress2, onNavigate, onReady }) {
   // BranchPortalTransition: қазір «Шежіре» (dest 0) бағыты қосылған
   const J = useMemo(() => makeJourney(T, H, 0), [T])
   const lights = { sun: useRef(), fill: useRef(), hemi: useRef(), key: useRef(), rim: useRef() }
+  const groups = { nature: useRef(), digital: useRef(), journey: useRef(), fibers: useRef() }
   useEffect(() => { onReady?.() }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
@@ -519,56 +535,71 @@ function Universe({ A, progress, progress2, onNavigate, onReady }) {
       <hemisphereLight ref={lights.hemi} args={['#cfe6ff', '#5b6b3a', 1.1]} />
       <directionalLight
         ref={lights.sun} position={[-30, 22, -42]} intensity={3.2} color="#ffd9a0" castShadow={!LITE}
-        shadow-mapSize={[2048, 2048]} shadow-camera-left={-16} shadow-camera-right={16} shadow-camera-top={22} shadow-camera-bottom={-6} shadow-camera-far={120} shadow-bias={-0.0005}
+        shadow-mapSize={[1024, 1024]} shadow-camera-left={-16} shadow-camera-right={16} shadow-camera-top={22} shadow-camera-bottom={-6} shadow-camera-far={120} shadow-bias={-0.0005}
       />
       <directionalLight ref={lights.fill} position={[14, 10, 30]} intensity={0.9} color="#ffe9cf" />
       <directionalLight ref={lights.key} position={[2, 30, 8]} intensity={0} color="#7fc4ff" />
       <directionalLight ref={lights.rim} position={[-8, 12, -20]} intensity={0} color="#19e6d2" />
-      <Director U={U} S={S} A={A} progress={progress} progress2={progress2} trees={T} lights={lights} />
+      <Director U={U} S={S} A={A} progress={progress} progress2={progress2} trees={T} lights={lights} groups={groups} />
       <SkyDome U={U} />
-      <Hills U={U} />
-      <Meadow U={U} y={GROUND} />
-      <Grass U={U} count={LITE ? 16000 : 60000} y={GROUND} />
-      <Flowers U={U} count={LITE ? 400 : 1600} y={GROUND} />
-      <RisingParticles U={U} S={S} lite={LITE} />
-      <TechFloor U={U} S={S} lite={LITE} />
+      <group ref={groups.nature}>
+        <Hills U={U} />
+        <Meadow U={U} y={GROUND} />
+        <Grass U={U} count={LITE ? 12000 : 34000} y={GROUND} />
+        <Flowers U={U} count={LITE ? 300 : 1000} y={GROUND} />
+        <RisingParticles U={U} S={S} lite={LITE} />
+      </group>
       <primitive object={T.tree} />
-      <TrunkFibers U={U} skeleton={T.skeleton} />
-      <BranchPulses U={U} skeleton={T.skeleton} S={S} />
-      <CrownSparks U={U} leaves={T.leaves} S={S} />
-      <Platform U={U} S={S} />
+      <group ref={groups.fibers}>
+        <TrunkFibers U={U} skeleton={T.skeleton} />
+        <BranchPulses U={U} skeleton={T.skeleton} S={S} />
+        <CrownSparks U={U} leaves={T.leaves} S={S} />
+      </group>
       <SectionNodes nodes={T.nodes} S={S} onNavigate={onNavigate} />
-      <EnergyRings S={S} />
-      <Panels U={U} S={S} lite={LITE} />
-      <Architecture U={U} S={S} lite={LITE} />
-      <Arches U={U} S={S} />
-      <DataStreams U={U} S={S} lite={LITE} />
-      <DataRain U={U} S={S} lite={LITE} />
-      <DataNodes U={U} S={S} lite={LITE} />
+      <group ref={groups.digital}>
+        <TechFloor U={U} S={S} lite={LITE} />
+        <Platform U={U} S={S} />
+        <EnergyRings S={S} />
+        <Panels U={U} S={S} lite={LITE} />
+        <Architecture U={U} S={S} lite={LITE} />
+        <Arches U={U} S={S} />
+        <DataStreams U={U} S={S} lite={LITE} />
+        <DataRain U={U} S={S} lite={LITE} />
+        <DataNodes U={U} S={S} lite={LITE} />
+      </group>
       <Beams U={U} S={S} />
-      <LightPath U={U} S={S} J={J} color="#00d9ff" />
-      <AscentSparks U={U} S={S} J={J} lite={LITE} />
-      <Portal S={S} J={J} lite={LITE} />
+      <group ref={groups.journey}>
+        <LightPath U={U} S={S} J={J} color="#00d9ff" />
+        <AscentSparks U={U} S={S} J={J} lite={LITE} />
+        <Portal S={S} J={J} lite={LITE} />
+      </group>
       <CameraRig S={S} J={J} />
     </>
   )
 }
 
-export default function TreeScene({ A, progress, progress2, onNavigate, onReady }) {
-  const dof = useRef()
+export default function TreeScene({ A, progress, progress2, onNavigate, onReady, active = true }) {
+  // Адаптивті рұқсат: FPS төмендесе — dpr кемиді, қалпына келсе — көтеріледі
+  const maxDpr = LITE ? 1.1 : Math.min(1.5, window.devicePixelRatio || 1)
+  const [dpr, setDpr] = useState(maxDpr)
   return (
     <Canvas
       shadows={!LITE}
-      dpr={[1, LITE ? 1.2 : 1.6]}
+      dpr={dpr}
+      frameloop={active ? 'always' : 'never'}
       camera={{ position: [0, 3.2, 33], fov: MOBILE ? 62 : 45, near: 0.1, far: 900 }}
-      gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.05 }}
+      gl={{ antialias: false, powerPreference: 'high-performance', stencil: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.05 }}
     >
+      <PerformanceMonitor
+        flipflops={4}
+        onDecline={() => setDpr((d) => Math.max(0.7, +(d - 0.2).toFixed(2)))}
+        onIncline={() => setDpr((d) => Math.min(maxDpr, +(d + 0.15).toFixed(2)))}
+        onFallback={() => setDpr(0.7)}
+      />
       <Universe A={A} progress={progress} progress2={progress2} onNavigate={onNavigate} onReady={onReady} />
-      {!LITE && <DofDriver dof={dof} />}
       {!LITE && (
         <EffectComposer multisampling={0}>
-          <DepthOfField ref={dof} focusDistance={0.012} focalLength={0.03} bokehScale={0} />
-          <Bloom mipmapBlur luminanceThreshold={0.85} luminanceSmoothing={0.2} intensity={1.0} radius={0.7} />
+          <Bloom mipmapBlur levels={5} resolutionScale={0.5} luminanceThreshold={0.85} luminanceSmoothing={0.2} intensity={1.0} radius={0.7} />
           <Vignette eskil={false} offset={0.28} darkness={0.5} />
         </EffectComposer>
       )}

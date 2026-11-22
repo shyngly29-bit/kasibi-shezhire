@@ -40,6 +40,15 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
   const [ready, setReady] = useState(false)
   const [awaking, setAwaking] = useState(false)
   const [gl] = useState(() => (typeof window === 'undefined' ? true : hasWebGL()))
+  // Кіріспе экраннан тыс болса — 3D-рендер толық тоқтайды (батарея мен FPS үнемі)
+  const [active, setActive] = useState(true)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setActive(e.isIntersecting), { rootMargin: '100px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
   const navLock = useRef(false)
   const progScroll = useRef(false)
   const navRef = useRef(onNavigate)
@@ -119,7 +128,7 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
       <div className="si-sticky">
         {gl ? (
           <Suspense fallback={<div className="si-fallback nature"><span>Табиғат оянуда…</span></div>}>
-            <TreeScene A={A} progress={p} progress2={q} onNavigate={onNavigate} onReady={() => setReady(true)} />
+            <TreeScene A={A} progress={p} progress2={q} active={active} onNavigate={onNavigate} onReady={() => setReady(true)} />
           </Suspense>
         ) : (
           <div className="si-fallback dark nogl"><span>Құрылғы 3D-графиканы қолдамайды — сайттың өзі толық жұмыс істейді.</span></div>

@@ -1,7 +1,6 @@
 // Табиғат → цифрлық әлем: аспан, төбелер, шалғын, шөп; цифрлық сәулет, анимациялы панельдер, ағындар, еден
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { MeshReflectorMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 import { panelTexture, ringTexture } from './textures'
 
@@ -263,7 +262,7 @@ export function Flowers({ U, count, y }) {
 
 // Жер еріген кезде жоғары ұшатын цифрлық бөлшектер
 export function RisingParticles({ U, S, lite }) {
-  const n = lite ? 800 : 2500
+  const n = lite ? 600 : 1500
   const { geo, mat } = useMemo(() => {
     const pos = new Float32Array(n * 3), rnd = new Float32Array(n)
     for (let i = 0; i < n; i++) {
@@ -294,7 +293,7 @@ export function RisingParticles({ U, S, lite }) {
 // Анимациялы голографиялық панельдер: бағандар, графиктер, радар, желі, ағын-кесте
 export function Panels({ U, S, lite }) {
   const items = useMemo(() => {
-    const n = lite ? 7 : 18
+    const n = lite ? 6 : 12
     const frame = panelTexture('frame', 1)
     return Array.from({ length: n }, (_, i) => {
       const side = i % 2 ? 1 : -1
@@ -370,7 +369,7 @@ export function Panels({ U, S, lite }) {
 // Жарық терезелері, жолақтары, сканер толқыны бар мұнаралар (жерден көтеріледі)
 export function Architecture({ U, S, lite }) {
   const ref = useRef()
-  const n = lite ? 30 : 72
+  const n = lite ? 24 : 48
   const mat = useMemo(() => new THREE.ShaderMaterial({
     uniforms: { ...U, uRise: { value: 0 } },
     vertexShader: `uniform float uRise; varying vec3 vWP; varying vec3 vL;
@@ -438,7 +437,7 @@ export function Arches({ U, S }) {
 
 // Тік деректер ағындары (жарық бағаналар) + деректер жаңбыры
 export function DataStreams({ U, S, lite }) {
-  const n = lite ? 8 : 18
+  const n = lite ? 6 : 12
   const mat = useMemo(() => new THREE.ShaderMaterial({
     ...ADD,
     uniforms: { ...U, uOp: { value: 0 } },
@@ -464,7 +463,7 @@ export function DataStreams({ U, S, lite }) {
 }
 
 export function DataRain({ U, S, lite }) {
-  const count = lite ? 700 : 2400
+  const count = lite ? 500 : 1500
   const { geo, mat } = useMemo(() => {
     const pos = new Float32Array(count * 3), spd = new Float32Array(count)
     for (let i = 0; i < count; i++) {
@@ -493,7 +492,7 @@ export function DataRain({ U, S, lite }) {
 
 // Ауада қалқып, соғып тұратын деректер түйіндері
 export function DataNodes({ U, S, lite }) {
-  const n = lite ? 60 : 160
+  const n = lite ? 50 : 110
   const { geo, mat } = useMemo(() => {
     const pos = new Float32Array(n * 3), rnd = new Float32Array(n)
     for (let i = 0; i < n; i++) {
@@ -593,11 +592,8 @@ export function TechFloor({ U, S, lite }) {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[300, 300]} />
-        {lite ? (
-          <meshStandardMaterial color="#071d33" metalness={0.6} roughness={0.35} />
-        ) : (
-          <MeshReflectorMaterial resolution={512} mixBlur={1} mixStrength={9} blur={[260, 90]} roughness={0.45} depthScale={0.8} minDepthThreshold={0.3} maxDepthThreshold={1.4} color="#061a2e" metalness={0.75} mirror={0.75} />
-        )}
+        {/* MeshReflectorMaterial алынды: ол бүкіл сахнаны екінші рет салатын — FPS үшін ең ауыр бөлік */}
+        <meshStandardMaterial color="#061a2e" metalness={0.7} roughness={0.32} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} material={grid}>
         <planeGeometry args={[160, 160]} />
