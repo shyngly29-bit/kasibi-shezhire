@@ -265,6 +265,41 @@ main { position: relative; }
 }
 @media (prefers-reduced-motion: reduce) { .rail-pulse, .branch-flash { display: none; } }
 
+/* ===== Digital Tree Universe — қараңғы кіріспе ===== */
+.si.si-dark { height: 640vh; }
+.si-fallback.dark { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(60% 60% at 50% 60%, #0a2a44, #031527 70%); color: rgba(0, 217, 255, 0.8); font-weight: 700; letter-spacing: 0.08em; }
+.si-fallback.dark span { animation: si-blink 1.4s ease-in-out infinite; text-align: center; padding: 0 20px; }
+.si-fallback.nogl span { animation: none; }
+@keyframes si-blink { 50% { opacity: 0.35; } }
+.si-title { position: absolute; left: 0; right: 0; bottom: 7vh; text-align: center; pointer-events: none; }
+.si-title h1 { margin: 0; font-size: clamp(2.6rem, 7.4vw, 6rem); line-height: 0.92; font-weight: 800; letter-spacing: 0.02em; background: linear-gradient(180deg, #ffffff 0%, #bff3ff 38%, #00d9ff 70%, #168bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 22px rgba(0, 217, 255, 0.55)) drop-shadow(0 4px 18px rgba(3, 21, 39, 0.9)); }
+.si-orn { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px 0 8px; color: #ffc76a; }
+.si-orn i { width: min(160px, 22vw); height: 1px; background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.9), transparent); }
+.si-orn b { font-size: 1rem; text-shadow: 0 0 12px #ffc76a; }
+.si-title p { margin: 0; color: rgba(225, 245, 255, 0.85); font-weight: 600; letter-spacing: 0.04em; text-shadow: 0 2px 12px #031527; }
+.si-skip { position: absolute; right: 22px; bottom: 22px; z-index: 5; border: 1px solid rgba(0, 217, 255, 0.45); background: rgba(3, 21, 39, 0.6); color: #bff3ff; padding: 9px 16px; border-radius: 99px; font-weight: 700; cursor: pointer; backdrop-filter: blur(8px); }
+.si-skip:hover { background: rgba(0, 217, 255, 0.2); }
+.si-hint.dark { color: rgba(191, 243, 255, 0.85); bottom: 10px; left: auto; right: 70px; transform: none; }
+.si-hint.dark span { display: none; }
+.si-hint.dark i { border-color: rgba(191, 243, 255, 0.6); }
+.si-progress.dark { background: rgba(191, 243, 255, 0.18); }
+.si-progress.dark span { color: rgba(191, 243, 255, 0.75); }
+.si-chips button { padding: 7px 14px; border-radius: 99px; border: 1px solid var(--c1); background: color-mix(in srgb, var(--c1) 22%, transparent); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+.si-chips button:hover { background: linear-gradient(135deg, var(--c1), var(--c2)); transform: translateY(-2px); }
+.si-cap.dark { pointer-events: auto; }
+.si-veil.light { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 100% at 50% 40%, rgba(245, 242, 234, 0.7), #f5f2ea 70%); }
+.si-reveal-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; padding-top: 60px; }
+.si-reveal2 { position: relative; width: min(980px, 94vw); text-align: center; }
+.si-reveal2 .si-brand { font-size: clamp(2.4rem, 7.5vw, 5.4rem); }
+.si-folders { display: flex; justify-content: center; gap: 26px; flex-wrap: wrap; margin: 6px 0 4px; }
+.si-cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+@media (max-width: 760px) {
+  .si-title { bottom: 16vh; }
+  .si-folders { gap: 8px; }
+  .si-folders > :nth-child(n+2) { display: none; }
+  .si-reveal-wrap { padding-top: 90px; }
+}
+
 /* Scroll intro — бәйтерек */
 html, body { overflow-x: clip; }
 .si { position: relative; height: 560vh; width: 100vw; margin-left: calc(50% - 50vw); margin-top: -96px; }

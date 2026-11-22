@@ -10,12 +10,15 @@ const PATH = [
   ['📘', 'Паспорт', 'Кәсіби паспортыңды ал'],
 ]
 
-export default function Intro({ s, update, next }) {
+export default function Intro({ s, update, next, go }) {
   const st = s.student
   const set = (k) => (e) => update({ student: { ...st, [k]: e.target.value } })
   return (
     <div className="intro">
-      <ScrollIntro onStart={() => document.getElementById('start')?.scrollIntoView({ behavior: 'smooth' })} />
+      <ScrollIntro
+        onNavigate={go}
+        onStart={() => document.getElementById('start')?.scrollIntoView({ behavior: 'smooth' })}
+      />
       <div className="hero" id="start">
         <h2>Саяхат жоспары</h2>
         <p>Алты қадамнан өтіп, өз кәсіби паспортыңды аласың.</p>

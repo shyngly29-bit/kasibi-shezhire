@@ -16,6 +16,7 @@
     "@react-three/postprocessing": "^3.2.2",
     "@react-three/xr": "^6.6.32",
     "framer-motion": "^14.14.0",
+    "gsap": "^3.15.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "three": "^0.187.0"
