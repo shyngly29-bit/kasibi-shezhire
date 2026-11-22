@@ -1,14 +1,13 @@
 // «Кәсіби шежіре» — ЖИ сервері (Claude). API кілті ТЕК осы серверде сақталады, сайтқа берілмейді.
 // Сайт тек оқушы деректерін жібереді; тапсырма (prompt) осы серверде құрылады — сервер жалпы чат ретінде пайдаланылмайды.
 import http from 'node:http'
-import Anthropic from '@anthropic-ai/sdk'
 
-const client = new Anthropic() // ANTHROPIC_API_KEY ортадан оқылады
-const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-5-5'
+// Claude OpenRouter арқылы: кілт OPENROUTER_API_KEY ортадан оқылады
+const KEY = process.env.OPENROUTER_API_KEY
+const MODEL = process.env.AI_MODEL || 'anthropic/claude-opus-5.5'
+const SITE = process.env.SITE_URL || 'https://shyngly29-bit.github.io/kasibi-shezhire/'
 const PORT = Number(process.env.PORT || 8787)
 const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://shyngly29-bit.github.io,http://localhost:5180').split(',').map((s) => s.trim())
-// Server-side fallback (бас тарту кезінде басқа модельде қайта орындау) — Opus / Sonnet / Fable үшін
-const USE_FALLBACK = /opus|sonnet|fable/.test(MODEL)
 
 // ---------- шектеулер ----------
 const LIMIT = Number(process.env.RATE_LIMIT || 30) // 10 минутта бір IP-ден
@@ -71,20 +70,34 @@ VR-сынамалар: ${vr || 'өтілмеген'}.
   return null
 }
 
+class UpstreamError extends Error { constructor(status, msg) { super(msg); this.status = status } }
+
 async function ask(job) {
-  const params = {
-    model: MODEL,
-    max_tokens: job.maxTokens,
-    system: job.system,
-    messages: job.messages,
-    output_config: { effort: 'low' }, // чат үшін жылдам әрі арзан
+  if (!KEY) throw new UpstreamError(401, 'OPENROUTER_API_KEY орнатылмаған')
+  const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${KEY}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': SITE,
+      'X-Title': 'Kasibi Shezhire',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: job.maxTokens,
+      messages: [{ role: 'system', content: job.system }, ...job.messages],
+      reasoning: { effort: 'low' }, // чат үшін жылдам әрі арзан
+    }),
+    signal: AbortSignal.timeout(90_000),
+  })
+  const json = await r.json().catch(() => ({}))
+  if (!r.ok || json.error) throw new UpstreamError(json.error?.code || r.status, json.error?.message || `HTTP ${r.status}`)
+  const choice = json.choices?.[0]
+  const text = String(choice?.message?.content || '').trim()
+  if (!text || choice?.finish_reason === 'content_filter' || choice?.native_finish_reason === 'refusal') {
+    return { refused: true, text: 'Кешір, бұл сұраққа жауап бере алмаймын. Басқаша сұрап көр.' }
   }
-  const res = USE_FALLBACK
-    ? await client.beta.messages.create({ ...params, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' })
-    : await client.messages.create(params)
-  if (res.stop_reason === 'refusal') return { refused: true, text: 'Кешір, бұл сұраққа жауап бере алмаймын. Басқаша сұрап көр.' }
-  const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim()
-  return { text, truncated: res.stop_reason === 'max_tokens' }
+  return { text, truncated: choice.finish_reason === 'length' }
 }
 
 // ---------- HTTP ----------
@@ -118,11 +131,11 @@ http.createServer(async (req, res) => {
   try {
     return send(res, 200, await ask(job), origin)
   } catch (err) {
-    if (err instanceof Anthropic.AuthenticationError) { console.error('API кілті жарамсыз'); return send(res, 500, { error: 'auth' }, origin) }
-    if (err instanceof Anthropic.RateLimitError) return send(res, 429, { error: 'upstream_rate', text: 'ЖИ қазір бос емес. Бір минуттан соң қайталап көр.' }, origin)
-    if (err instanceof Anthropic.BadRequestError) { console.error('400:', err.message); return send(res, 500, { error: 'bad_request' }, origin) }
-    if (err instanceof Anthropic.APIError) { console.error(`API ${err.status}:`, err.message); return send(res, 502, { error: 'upstream' }, origin) }
-    console.error(err)
-    return send(res, 500, { error: 'server' }, origin)
+    const st = Number(err.status) || 0
+    console.error(`OpenRouter ${st}:`, err.message)
+    if (st === 401 || st === 403) return send(res, 500, { error: 'auth' }, origin)
+    if (st === 402) return send(res, 502, { error: 'credits', text: 'ЖИ балансы таусылды. Мұғалімге хабарла.' }, origin)
+    if (st === 429) return send(res, 429, { error: 'upstream_rate', text: 'ЖИ қазір бос емес. Бір минуттан соң қайталап көр.' }, origin)
+    return send(res, 502, { error: 'upstream' }, origin)
   }
 }).listen(PORT, () => console.log(`Кәсіби шежіре ЖИ сервері: :${PORT}, модель ${MODEL}`))

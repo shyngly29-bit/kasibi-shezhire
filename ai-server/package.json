@@ -3,12 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Кәсіби шежіре — Claude ЖИ сервері (API кілті тек осында)",
+  "description": "Кәсіби шежіре — Claude (OpenRouter) ЖИ сервері (API кілті тек осында)",
   "scripts": {
     "start": "node server.mjs"
   },
-  "engines": { "node": ">=20" },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^1.12.0"
-  }
+  "engines": { "node": ">=20" }
 }
