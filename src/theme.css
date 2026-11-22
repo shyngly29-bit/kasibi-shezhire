@@ -204,6 +204,63 @@ main { padding: 26px 0 40px; min-height: 70vh; }
 .stamp b { color: var(--teal); }
 blockquote { margin: 0; padding: 12px 16px; border-left: 3px solid var(--gold); background: rgba(255, 255, 255, 0.7); border-radius: 0 12px 12px 0; font-style: italic; }
 
+/* Scroll intro — бәйтерек */
+html, body { overflow-x: clip; }
+.si { position: relative; height: 560vh; width: 100vw; margin-left: calc(50% - 50vw); margin-top: -96px; }
+.si-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+.si-sticky canvas { display: block; }
+.si-fallback { position: absolute; inset: 0; background: linear-gradient(180deg, #f6d9a8 0%, #f3e6cf 55%, #c8b26a 100%); }
+.si-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(245, 241, 232, 0.55) 0%, rgba(245, 241, 232, 0) 45%), linear-gradient(0deg, rgba(245, 241, 232, 0.9) 0%, rgba(245, 241, 232, 0) 18%); }
+.si-cap { position: absolute; left: max(24px, calc(50vw - 560px)); bottom: 12vh; max-width: 520px; padding: 24px 26px; border-radius: 24px; background: rgba(255, 255, 255, 0.58); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); border: 1px solid rgba(255, 255, 255, 0.85); box-shadow: var(--shadow); pointer-events: none; }
+.si-cap h1 { font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1.03; font-weight: 800; letter-spacing: -0.035em; margin: 6px 0 12px; }
+.si-cap h1 span, .si-cap h2 span { background: linear-gradient(90deg, var(--teal), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.si-cap h2 { font-size: clamp(1.5rem, 3.4vw, 2.4rem); font-weight: 800; margin: 6px 0 10px; }
+.si-cap p { margin: 0; color: #3e5163; font-size: 1.02rem; }
+.si-cap.hero-cap { bottom: auto; top: 24vh; max-width: 600px; background: rgba(255, 255, 255, 0.45); }
+.si-cap.top-cap { bottom: auto; top: 18vh; }
+.si-darkui { position: absolute; inset: 0; pointer-events: none; }
+.si-cap.dark { background: rgba(7, 24, 38, 0.55); border-color: rgba(0, 217, 255, 0.28); box-shadow: 0 0 0 1px rgba(0, 217, 255, 0.08) inset, 0 20px 50px -20px rgba(0, 217, 255, 0.35); }
+.si-cap.dark h2 { color: #f4faff; }
+.si-cap.dark p { color: rgba(244, 250, 255, 0.78); }
+.si-cap.dark .si-kicker { color: #00d9ff; }
+.si-cap.dark .si-trans div { background: rgba(0, 217, 255, 0.08); border: 1px solid rgba(0, 217, 255, 0.18); }
+.si-cap.dark .si-trans b { color: #f4faff; }
+.si-cap.dark .si-trans em { color: #00d9ff; }
+.si-veil { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, rgba(245, 241, 232, 0.6), var(--bg) 70%); }
+.si-reveal { position: absolute; left: 0; right: 0; top: 50%; margin: -170px auto 0; width: min(640px, 92vw); text-align: center; }
+.si-brand { font-size: clamp(2.4rem, 8vw, 5.6rem); font-weight: 800; letter-spacing: 0.04em; line-height: 1; margin: 10px 0 8px; background: linear-gradient(90deg, var(--teal), #247bff 55%, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.si-motto { font-size: clamp(1rem, 2.4vw, 1.35rem); font-weight: 700; letter-spacing: 0.08em; color: var(--ink); margin: 0 0 10px; }
+.si-reveal p { color: var(--muted); }
+.si-reveal .btn { margin-top: 14px; padding: 14px 34px; font-size: 1.05rem; }
+.si-kicker { display: inline-block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--teal); }
+.si-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+.si-chips span { padding: 6px 12px; border-radius: 99px; background: var(--gold-soft); border: 1px solid rgba(195, 146, 40, 0.4); font-weight: 600; font-size: 0.85rem; }
+.si-trans { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.si-trans div { display: grid; grid-template-columns: 1fr auto 1.5fr; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.7); }
+.si-trans b { color: #7a5a14; }
+.si-trans i { color: var(--gold); font-style: normal; font-weight: 800; }
+.si-trans em { font-style: normal; font-weight: 700; color: var(--teal); }
+.si-cta { pointer-events: auto; left: 0; right: 0; margin: 0 auto; width: min(540px, 90vw); bottom: auto; top: 30vh; text-align: center; }
+.si-cta .btn { margin-top: 18px; padding: 14px 34px; font-size: 1.05rem; }
+.si-hint { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; color: #3e5163; font-size: 0.8rem; font-weight: 600; pointer-events: none; }
+.si-hint i { width: 22px; height: 36px; border-radius: 12px; border: 2px solid rgba(20, 40, 59, 0.45); position: relative; }
+.si-hint i::after { content: ''; position: absolute; left: 50%; top: 6px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: var(--teal); animation: si-wheel 1.6s ease-in-out infinite; }
+@keyframes si-wheel { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(12px); } }
+.si-progress { position: absolute; right: 28px; top: 50%; height: 220px; width: 3px; transform: translateY(-50%); background: rgba(20, 40, 59, 0.14); border-radius: 3px; }
+.si-bar { width: 100%; background: linear-gradient(var(--teal), var(--gold)); border-radius: 3px; }
+.si-progress span { position: absolute; right: 12px; transform: translateY(-50%); font-size: 0.7rem; font-weight: 700; color: #3e5163; white-space: nowrap; }
+.intro > .hero { padding-top: 40px; }
+.intro > .hero h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); font-weight: 800; }
+@media (max-width: 700px) {
+  .si-cap { left: 12px; right: 12px; bottom: 9vh; max-width: none; padding: 18px; }
+  .si-cap.hero-cap { top: auto; bottom: 15vh; }
+  .si-hint { bottom: 12px; }
+  .si-cta { left: 12px; right: 12px; width: auto; top: auto; bottom: 14vh; }
+  .si-progress { display: none; }
+  .si-shade { background: linear-gradient(0deg, rgba(245, 241, 232, 0.85) 0%, rgba(245, 241, 232, 0) 40%); }
+  .si-cap p { font-size: 0.95rem; }
+}
+
 /* Responsive */
 @media (max-width: 960px) {
   .path { grid-template-columns: repeat(3, 1fr); }
