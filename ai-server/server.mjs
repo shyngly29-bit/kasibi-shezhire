@@ -6,7 +6,9 @@ import http from 'node:http'
 const KEY = (process.env.OPENROUTER_API_KEY || '').trim().replace(/^Bearer\s+/i, '')
 // Кілттің өзін ешқашан логқа шығармаймыз — тек пішімін тексереміз
 console.log(`Кілт: ${KEY ? (KEY.startsWith('sk-or-') ? 'OpenRouter пішімі дұрыс' : 'sk-or- деп басталмайды!') : 'жоқ'}, ұзындығы ${KEY.length}`)
-const MODEL = process.env.AI_MODEL || 'anthropic/claude-haiku-5.5'
+// AI_MODEL: бір модель немесе үтір арқылы тізім — біріншісі қатып қалса, OpenRouter келесісіне ауысады
+const MODELS = (process.env.AI_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b:free,anthropic/claude-haiku-5.5').split(',').map((s) => s.trim()).filter(Boolean)
+const MODEL = MODELS.join(', ')
 const SITE = process.env.SITE_URL || 'https://shyngly29-bit.github.io/kasibi-shezhire/'
 const PORT = Number(process.env.PORT || 8787)
 const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://shyngly29-bit.github.io,http://localhost:5180').split(',').map((s) => s.trim())
@@ -115,7 +117,7 @@ async function ask(job) {
       'X-Title': 'Kasibi Shezhire',
     },
     body: JSON.stringify({
-      model: MODEL,
+      ...(MODELS.length > 1 ? { models: MODELS } : { model: MODELS[0] }),
       max_tokens: job.maxTokens,
       messages: [{ role: 'system', content: job.system }, ...job.messages],
       reasoning: { effort: 'low' }, // чат үшін жылдам әрі арзан
@@ -129,7 +131,7 @@ async function ask(job) {
   if (!text || choice?.finish_reason === 'content_filter' || choice?.native_finish_reason === 'refusal') {
     return { refused: true, text: 'Кешір, бұл сұраққа жауап бере алмаймын. Басқаша сұрап көр.' }
   }
-  return { text, truncated: choice.finish_reason === 'length' }
+  return { text, truncated: choice.finish_reason === 'length', model: json.model }
 }
 
 // ---------- HTTP ----------
