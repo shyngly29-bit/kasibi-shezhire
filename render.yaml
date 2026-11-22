@@ -12,7 +12,7 @@ services:
       - key: OPENROUTER_API_KEY
         sync: false # кілтті Render панелінде қолмен енгізесіз
       - key: AI_MODEL
-        value: anthropic/claude-opus-5.5
+        value: anthropic/claude-haiku-5.5
       - key: ALLOWED_ORIGINS
         value: https://shyngly29-bit.github.io,http://localhost:5180
       - key: RATE_LIMIT
