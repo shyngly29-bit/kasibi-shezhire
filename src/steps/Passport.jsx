@@ -1,6 +1,35 @@
 import { PROFESSIONS, RIASEC, VR_INFO, transformJob } from '../data'
 import { topTypes } from '../store'
 import { Bars } from './Test'
+import GlassFolder from '@/components/ui/glass-folder-cards'
+
+const ARTS = { electric: 'ember', oil: 'dusk', nurse: 'glacier', drone: 'verdant' }
+
+function Portfolio({ s }) {
+  const w = Math.min(300, (typeof window !== 'undefined' ? window.innerWidth : 360) - 48)
+  const fam = s.family.filter((f) => f.job).map((f) => ({ name: f.role, meta: f.job }))
+  const vr = Object.entries(s.vr).map(([id, r]) => ({ name: VR_INFO[id].title, meta: r.score + '%', art: ARTS[id] }))
+  const picks = s.pick3.map((id) => ({ name: PROFESSIONS.find((p) => p.id === id)?.name || id, meta: '🎯' }))
+  const folders = [
+    { label: 'Шежіре', art: 'verdant', seed: 5, files: fam, empty: 'Шежіре толтырылмаған' },
+    { label: 'VR-сынамалар', art: 'ember', seed: 11, files: vr, empty: 'Сынама өтілмеген' },
+    { label: 'Менің 3 мамандығым', art: 'aurora', seed: 3, files: picks, empty: 'Таңдалмаған' },
+  ]
+  return (
+    <div className="portfolio no-print">
+      {folders.map((f, i) => (
+        <GlassFolder
+          key={f.label + f.files.length}
+          label={f.label}
+          meta={f.files.length ? `${f.files.length} құжат · ашу үшін бас` : f.empty}
+          tone="dark" art={f.art} seed={f.seed} action="none" width={w}
+          appearDelay={i * 140}
+          files={f.files.length ? f.files : [{ name: f.empty }]}
+        />
+      ))}
+    </div>
+  )
+}
 
 export default function Passport({ s, go, reset }) {
   const vrDone = Object.entries(s.vr)
@@ -10,8 +39,9 @@ export default function Passport({ s, go, reset }) {
     <div className="passport">
       <div className="head no-print">
         <h2>📘 Кәсіби паспорт</h2>
-        <p>Барлық нәтижең бір жерде. Басып шығаруға немесе PDF ретінде сақтауға болады.</p>
+        <p>Барлық нәтижең бір жерде. Папканы басып аш — ішіндегі құжаттар шығады. Төменде басып шығаруға арналған паспорт.</p>
       </div>
+      <Portfolio s={s} />
       <div className="card pass">
         <div className="pass-top">
           <div>
