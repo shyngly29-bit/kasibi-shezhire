@@ -9,7 +9,15 @@ import {
   Panels, Architecture, Arches, DataStreams, DataRain, DataNodes, Beams, EnergyRings, TechFloor,
 } from './environment'
 import { platformTexture, labelTexture, glowTexture } from './textures'
-import { makeJourney, LightPath, Portal } from './journey'
+import { makeJourney, LightPath, Portal, AscentSparks } from './journey'
+import { DepthOfField } from '@react-three/postprocessing'
+
+// Пост-эффекттер үшін ортақ мән (Director жазады, DofDriver оқиды)
+const FX = { bokeh: 0 }
+function DofDriver({ dof }) {
+  useFrame(() => { if (dof.current) dof.current.bokehScale = FX.bokeh })
+  return null
+}
 import { BRANCHES, ORDER } from '../branches'
 
 const H = 16
@@ -107,11 +115,14 @@ function useTrees(U) {
       uniforms: { ...U, uMap: { value: map } },
       vertexShader: `uniform float uTime; varying vec2 vUv; varying vec3 vWP;
         void main(){ vUv = uv; vec4 wp = modelMatrix*vec4(position,1.0); wp.x += sin(uTime*1.3 + wp.y*0.5 + wp.z*0.3)*0.05; vWP = wp.xyz; gl_Position = projectionMatrix*viewMatrix*wp; }`,
-      fragmentShader: `uniform sampler2D uMap; uniform float uTime; uniform float uDis; varying vec2 vUv; varying vec3 vWP; ${NOISE} ${DN} ${FOG}
+      fragmentShader: `uniform sampler2D uMap; uniform float uTime; uniform float uDis; uniform float uThin; varying vec2 vUv; varying vec3 vWP; ${NOISE} ${DN} ${FOG}
         void main(){
           vec4 t = texture2D(uMap, vUv); if (t.a < 0.45) discard;
           float dd = dN(vWP); if (dd >= uDis) discard;
           float r = h3(floor(vWP*2.2));
+          // бұтақ бойымен ұшқанда: тәж сиреп, камераның жанындағы жапырақтар ашылады (бұтақ көрінеді)
+          if (r < uThin*0.65) discard;
+          if (uThin > 0.01 && length(vWP - cameraPosition) < 2.6 + uThin*1.6) discard;
           vec3 c = mix(vec3(0.03,0.32,0.38), vec3(0.0,0.45,0.68), r) * (0.55 + 0.6*t.g);
           float tw = step(0.975, r) * (0.55 + 0.45*sin(uTime*3.0 + r*40.0));
           c = mix(c, vec3(1.0,0.78,0.42)*2.4, tw);
@@ -171,7 +182,7 @@ function useTrees(U) {
       return (sec[Math.floor(sec.length * 0.15)] || new THREE.Vector3(Math.sin(a0) * 5, H * 0.8, Math.cos(a0) * 5)).clone()
     })
     nodes.sort((a, b) => b.z - a.z)
-    return { tree: root, skeleton, leaves, nodes }
+    return { tree: root, skeleton, leaves, nodes, branchPts: br }
   }, [gltf, U])
 }
 
@@ -352,10 +363,12 @@ function SectionNodes({ nodes, S, onNavigate }) {
       const f = S.current.focus
       const k = Math.min(1.6, Math.max(S.current.nodes[i], hover === i ? 1 : 0) + (f && f.i === i ? 0.6 : 0))
       const pulse = 1 + Math.sin(clock.elapsedTime * 3 + i) * 0.12
-      g.children[0].material.opacity = Math.min(1, k)
+      // бұтақ бойымен ұшқанда түйін жазулары жасырылады (камераға жақын келгенде кадрды жаппауы үшін)
+      const fly = 1 - THREE.MathUtils.smoothstep(S.current.q, 0.28, 0.4)
+      g.children[0].material.opacity = Math.min(1, k) * fly
       g.children[0].scale.setScalar((1.6 + k * 1.4) * pulse)
-      g.children[1].material.opacity = Math.min(1, k)
-      g.children[2].material.opacity = Math.min(1, k * 1.2)
+      g.children[1].material.opacity = Math.min(1, k) * fly
+      g.children[2].material.opacity = Math.min(1, k * 1.2) * fly
     })
   })
   return items.map((it, i) => (
@@ -403,7 +416,9 @@ function CameraRig({ S, J }) {
   const P = useMemo(() => new THREE.Vector3(), [])
   const L = useMemo(() => new THREE.Vector3(), [])
   const F = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3() }), [])
-  useFrame(() => {
+  const qT = useMemo(() => new THREE.Quaternion(), [])
+  const mT = useMemo(() => new THREE.Matrix4(), [])
+  useFrame((_, dt) => {
     const p = THREE.MathUtils.clamp(S.current.p, 0, 1)
     let i = 0
     while (i < keys.length - 2 && p > keys[i + 1].t) i++
@@ -411,18 +426,11 @@ function CameraRig({ S, J }) {
     curves.pos.getPoint(u, P)
     curves.look.getPoint(u, L)
     if (REDUCED) { P.copy(keys[0].pos); L.copy(keys[0].look) }
-    // DIGITAL ROOTS JOURNEY: бас экраннан → бұтақ → жарық жол → портал
+    // BranchPortalTransition: діңмен көтерілу → нақты бұтақ бойымен ұшу → портал арқылы өту
     const q = S.current.q
     if (q > 0 && !REDUCED) {
-      const ks = [{ t: 0, pos: P.clone(), look: L.clone() }, ...J.cam]
-      let j = 0
-      while (j < ks.length - 2 && q > ks[j + 1].t) j++
-      const a = ks[j], b = ks[j + 1]
-      const e = THREE.MathUtils.smootherstep(THREE.MathUtils.clamp((q - a.t) / (b.t - a.t), 0, 1), 0, 1)
-      jP.lerpVectors(a.pos, b.pos, e)
-      jL.lerpVectors(a.look, b.look, e)
-      P.copy(jP)
-      L.copy(jL)
+      jP.copy(P); jL.copy(L)
+      J.sample(q, jP, jL, P, L)
     }
     // ояну: камера жақыннан шегінеді
     const intro = S.current.intro
@@ -437,8 +445,12 @@ function CameraRig({ S, J }) {
       L.lerp(f.pos, k)
     }
     camera.position.copy(P)
-    camera.lookAt(L)
-    if (import.meta.env.DEV) window.__intro = { p }
+    // бағыт кенет бұрылмауы үшін кватернион арқылы жұмсақ бұрылу (FPS-ке тәуелсіз)
+    mT.lookAt(P, L, camera.up)
+    qT.setFromRotationMatrix(mT)
+    const k = q > 0 ? 1 - Math.exp(-Math.min(dt, 0.1) * 7) : 1
+    camera.quaternion.slerp(qT, k)
+    if (import.meta.env.DEV) window.__intro = { p, q }
   })
   return null
 }
@@ -452,8 +464,11 @@ function Director({ U, S, A, progress, progress2, trees, lights }) {
     const p = progress.get()
     s.p = p
     s.q = progress2 ? progress2.get() : 0
-    s.light = ss(0.7, 0.98, s.q)
+    s.light = ss(0.84, 0.99, s.q)
+    // бұтақ бойымен ұшқанда тереңдік фокусы (DOF) — алыстағы бұтақтар жұмсақ бұлыңғыр
+    FX.bokeh = ss(0.38, 0.5, s.q) * (1 - ss(0.78, 0.86, s.q)) * 2.2
     U.uLight.value = s.light
+    U.uThin.value = ss(0.3, 0.42, s.q) * (1 - ss(0.86, 0.94, s.q))
     s.intro = A.current.intro
     s.energy = ss(0.18, 0.4, p)
     s.cool = ss(0.22, 0.58, p)
@@ -490,11 +505,12 @@ function Director({ U, S, A, progress, progress2, trees, lights }) {
 function Universe({ A, progress, progress2, onNavigate, onReady }) {
   const U = useMemo(() => ({
     uTime: { value: 0 }, uFogC: { value: C('#d9dde0') }, uFogD: { value: 0.009 },
-    uEnergy: { value: 0 }, uCool: { value: 0 }, uDis: { value: 0 }, uDig: { value: 0 }, uLight: { value: 0 },
+    uEnergy: { value: 0 }, uCool: { value: 0 }, uDis: { value: 0 }, uDig: { value: 0 }, uLight: { value: 0 }, uThin: { value: 0 },
   }), [])
   const S = useRef({ p: 0, q: 0, light: 0, intro: 0, energy: 0, cool: 0, dis: 0, envDig: 0, rise: 0, world: 0, focus: null, nodes: SECTIONS.map(() => 0) })
   const T = useTrees(U)
-  const J = useMemo(() => makeJourney(T.nodes[0], H), [T])
+  // BranchPortalTransition: қазір «Шежіре» (dest 0) бағыты қосылған
+  const J = useMemo(() => makeJourney(T, H, 0), [T])
   const lights = { sun: useRef(), fill: useRef(), hemi: useRef(), key: useRef(), rim: useRef() }
   useEffect(() => { onReady?.() }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return (
@@ -530,14 +546,16 @@ function Universe({ A, progress, progress2, onNavigate, onReady }) {
       <DataRain U={U} S={S} lite={LITE} />
       <DataNodes U={U} S={S} lite={LITE} />
       <Beams U={U} S={S} />
-      <LightPath U={U} S={S} J={J} />
-      <Portal S={S} J={J} />
+      <LightPath U={U} S={S} J={J} color="#00d9ff" />
+      <AscentSparks U={U} S={S} J={J} lite={LITE} />
+      <Portal S={S} J={J} lite={LITE} />
       <CameraRig S={S} J={J} />
     </>
   )
 }
 
 export default function TreeScene({ A, progress, progress2, onNavigate, onReady }) {
+  const dof = useRef()
   return (
     <Canvas
       shadows={!LITE}
@@ -546,8 +564,10 @@ export default function TreeScene({ A, progress, progress2, onNavigate, onReady 
       gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.05 }}
     >
       <Universe A={A} progress={progress} progress2={progress2} onNavigate={onNavigate} onReady={onReady} />
+      {!LITE && <DofDriver dof={dof} />}
       {!LITE && (
         <EffectComposer multisampling={0}>
+          <DepthOfField ref={dof} focusDistance={0.012} focalLength={0.03} bokehScale={0} />
           <Bloom mipmapBlur luminanceThreshold={0.85} luminanceSmoothing={0.2} intensity={1.0} radius={0.7} />
           <Vignette eskil={false} offset={0.28} darkness={0.5} />
         </EffectComposer>

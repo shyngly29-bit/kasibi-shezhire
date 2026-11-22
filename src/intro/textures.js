@@ -174,6 +174,9 @@ export function platformTexture() {
   return tex(c)
 }
 
+import { landscapeCanvas } from './landscape'
+export function landscapeTexture() { return tex(landscapeCanvas()) }
+
 // Портал: алтын қошқар мүйіз оюы бар сақина + ішкі жұмсақ піл сүйегі жарығы
 export function portalTexture() {
   const S = 1024

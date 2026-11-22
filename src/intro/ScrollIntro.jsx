@@ -8,7 +8,8 @@ import GlassFolder from '@/components/ui/glass-folder-cards'
 import Ornament from '../components/Ornament'
 
 gsap.registerPlugin(ScrollTrigger)
-const SPLIT = 0.74 // 0..SPLIT — табиғаттан цифрлық ағашқа; SPLIT..1 — «Шежіре» бұтағы бойымен порталға
+const RETURN_KEY = 'ks-portal-return'
+const SPLIT = 0.7 // 0..SPLIT — табиғаттан цифрлық ағашқа; SPLIT..1 — «Шежіре» бұтағы бойымен порталға
 gsap.ticker.lagSmoothing(0)
 const TreeScene = lazy(() => import('./TreeScene'))
 const REDUCED = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -27,7 +28,7 @@ function Caption({ p, range, children, className = '' }) {
   return <motion.div className={`si-cap ${className}`} style={{ opacity, y, pointerEvents }}>{children}</motion.div>
 }
 
-const SCENES = ['Табиғат', 'Ояну', 'Трансформация', 'Цифрлық әлем', 'Портал', 'Шежіре']
+const SCENES = ['Табиғат', 'Ояну', 'Трансформация', 'Цифрлық әлем', 'Көтерілу', 'Бұтақ', 'Шежіре']
 
 export default function ScrollIntro({ s, onNavigate, onStart }) {
   const ref = useRef(null)
@@ -39,17 +40,53 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
   const [ready, setReady] = useState(false)
   const [awaking, setAwaking] = useState(false)
   const [gl] = useState(() => (typeof window === 'undefined' ? true : hasWebGL()))
+  const navLock = useRef(false)
+  const progScroll = useRef(false)
+  const navRef = useRef(onNavigate)
+  navRef.current = onNavigate
 
-  // Бірыңғай scroll-timeline: GSAP ScrollTrigger (sticky pin + scrub), кері бағытта да жұмыс істейді
+  // Бірыңғай scroll-timeline: GSAP ScrollTrigger (sticky pin + scrub), кері бағытта да жұмыс істейді.
+  // Портал арқылы толық өткенде (тек алға айналдырғанда) «Шежіре» бөлімі ашылады — pin босатылады.
   useLayoutEffect(() => {
     const proxy = { v: 0 }
+    const st = { prog: 0, dir: 1 }
     const tw = gsap.to(proxy, {
       v: 1, ease: 'none',
-      scrollTrigger: { trigger: ref.current, start: 'top top', end: 'bottom bottom', scrub: REDUCED ? true : 1.2 },
-      onUpdate: () => P.set(proxy.v),
+      scrollTrigger: {
+        trigger: ref.current, start: 'top top', end: 'bottom bottom', scrub: REDUCED ? true : 1.2,
+        onUpdate: (self) => { st.prog = self.progress; st.dir = self.direction },
+      },
+      onUpdate: () => {
+        const v = proxy.v
+        P.set(v)
+        // айналдыру соңына жетті (алға) және камера порталдан өтті → «Шежіре» бөлімі
+        if (st.prog > 0.995 && st.dir > 0 && v > 0.985 && !navLock.current && !progScroll.current) {
+          navLock.current = true
+          try { sessionStorage.setItem(RETURN_KEY, String(window.scrollY)) } catch { /* */ }
+          navRef.current(1)
+        }
+      },
     })
     return () => { tw.scrollTrigger?.kill(); tw.kill() }
   }, [P])
+  // 3D жүктелгеннен кейін ScrollTrigger өлшемдерін жаңарту (секірулерсіз)
+  useEffect(() => { if (ready) ScrollTrigger.refresh() }, [ready])
+
+  // «Шежіре»-ден Back басқанда — порталдың жанына қайтамыз, кері айналдыруға болады
+  useEffect(() => {
+    if (!ready) return
+    let y = null
+    try { y = sessionStorage.getItem(RETURN_KEY); sessionStorage.removeItem(RETURN_KEY) } catch { /* */ }
+    if (!y) return
+    progScroll.current = true
+    const t = setTimeout(() => {
+      ScrollTrigger.refresh()
+      window.scrollTo({ top: Math.max(0, Number(y) - window.innerHeight * 0.9), behavior: 'auto' })
+      setTimeout(() => { progScroll.current = false }, 1800)
+    }, 120)
+    return () => clearTimeout(t)
+  }, [ready])
+  const startPlan = () => { progScroll.current = true; setTimeout(() => { progScroll.current = false }, 2500); onStart() }
 
   // Таңғы ояну: қараңғыдан күн шығады, камера шегінеді (сессияда бір рет, өткізуге болады)
   useEffect(() => {
@@ -133,20 +170,20 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
           <p>Жеті атадан — болашақ мамандыққа</p>
           <div className="si-cta-row left">
             <button className="btn hero-btn" onClick={() => onNavigate(1)}>Бастау →</button>
-            <button className="btn hero-btn map" onClick={onStart}>🗺 Саяхат жоспары</button>
+            <button className="btn hero-btn map" onClick={startPlan}>🗺 Саяхат жоспары</button>
           </div>
         </motion.div>
 
         {/* DIGITAL ROOTS JOURNEY — «Шежіре» бұтағы бойымен порталға */}
-        <Caption p={q} range={[0.13, 0.42]} className="dark">
-          <small className="si-kicker">05 · Шежіре бұтағы</small>
-          <h2>Бұтақ — жарық жолға айналады</h2>
-          <p>Импульс «Шежіре» бұтағымен өтіп, сені тамырыңа апаратын порталға бастайды.</p>
+        <Caption p={q} range={[0.12, 0.33]} className="dark">
+          <small className="si-kicker">05 · Көтерілу</small>
+          <h2>Діңмен жоғары — тамырдан тәжге</h2>
+          <p>Энергия талшықтары діңді орап, бізді бұтақтардың айрығына көтереді.</p>
         </Caption>
-        <Caption p={q} range={[0.44, 0.78]} className="dark top-cap">
-          <small className="si-kicker">06 · Портал</small>
-          <h2>Жеті атаның есігі</h2>
-          <p>Портал арқылы цифрлық кеңістік жарық әлемге ауысады.</p>
+        <Caption p={q} range={[0.42, 0.66]} className="dark top-cap">
+          <small className="si-kicker">06 · Шежіре бұтағы</small>
+          <h2>Бұтақ бойымен — порталға</h2>
+          <p>Бұтақтың ұшында — жеті атаның есігі. Оның ар жағында — «Шежіре».</p>
         </Caption>
 
         <motion.div className="si-veil ivory" style={{ opacity: veil }} />

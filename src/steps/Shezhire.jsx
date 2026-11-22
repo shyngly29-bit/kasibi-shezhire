@@ -4,6 +4,7 @@ import { BRANCHES } from '../branches'
 import Ornament from '../components/Ornament'
 import NextBranch from '../components/NextBranch'
 import GlassFolder from '@/components/ui/glass-folder-cards'
+import { landscapeDataURL } from '../intro/landscape'
 
 export default function Shezhire({ s, update, next }) {
   const fam = s.family
@@ -16,8 +17,19 @@ export default function Shezhire({ s, update, next }) {
 
   return (
     <div className="shz">
+      {/* Портал ортасында көрінген бейне — бөлімнің басында жалғасады (үздіксіз өту) */}
+      <motion.div
+        className="shz-banner" style={{ backgroundImage: `url(${landscapeDataURL()})` }}
+        initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.1, ease: [0.215, 0.61, 0.355, 1] }}
+      >
+        <div className="shz-banner-in">
+          <Ornament width={170} />
+          <h1 className="shz-title">ШЕЖІРЕ</h1>
+          <p className="shz-sub">Тектің тамыры — болашақтың тірегі</p>
+          <Ornament width={120} />
+        </div>
+      </motion.div>
       <div className="head shz-head">
-        <Ornament width={180} />
         <small className="kicker">01 · Шежіре бұтағы</small>
         <h2>Кәсіби шежіре</h2>
         <p>Ата-анаңнан, атаң мен әжеңнен сұра: олар кім болып жұмыс істеді? Әр кәсіп болашақта қалай өзгеретінін көресің.</p>

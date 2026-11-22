@@ -370,7 +370,7 @@ main { padding-top: 112px; }
 
 /* ===== Digital Roots Journey: портал → «Шежіре» → «Тест» ===== */
 :root { --heritage: #c9a568; --navy: #172b3d; }
-.si.si-dark { height: 860vh; }
+.si.si-dark { height: 1000vh; }
 .si-veil.ivory { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(110% 90% at 50% 45%, rgba(255, 252, 244, 0.85) 0%, #f5f2ea 62%, #efe9dc 100%); }
 .shz-entry { position: relative; width: min(1000px, 94vw); text-align: center; display: flex; flex-direction: column; align-items: center; }
 .shz-title { margin: 4px 0; font-size: clamp(2.8rem, 8vw, 5.6rem); font-weight: 800; letter-spacing: 0.04em; line-height: 1; background: linear-gradient(100deg, var(--navy) 0%, #1289b5 45%, #287eff 75%, var(--heritage) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -504,3 +504,11 @@ html, body { overflow-x: clip; }
   body::before, .top, .foot, .no-print { display: none !important; }
   .card, .pass { background: #fff !important; box-shadow: none; border: 1px solid #ccc; backdrop-filter: none; }
 }
+
+/* «Шежіре» бөлімінің басы: портал ортасындағы пейзаж жалғасады */
+.shz-banner { position: relative; margin: -6px 0 26px; min-height: 300px; border-radius: 28px; background-size: cover; background-position: center 62%; display: grid; place-items: center; overflow: hidden; box-shadow: var(--shadow); border: 1px solid rgba(255, 255, 255, 0.85); }
+.shz-banner::before { content: ''; position: absolute; inset: 0; background: radial-gradient(70% 80% at 50% 45%, rgba(245, 242, 234, 0.78), rgba(245, 242, 234, 0.25) 70%, rgba(245, 242, 234, 0.05)); }
+.shz-banner-in { position: relative; text-align: center; padding: 30px 16px; }
+.shz-banner .shz-title { font-size: clamp(2.6rem, 8vw, 5.2rem); }
+.shz-banner .shz-sub { color: #172b3d; font-size: clamp(1rem, 2.2vw, 1.3rem); }
+@media (max-width: 640px) { .shz-banner { min-height: 220px; border-radius: 22px; } }
