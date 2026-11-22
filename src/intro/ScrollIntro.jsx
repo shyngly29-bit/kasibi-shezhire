@@ -3,8 +3,12 @@ import { motion, useMotionValue, useTransform } from 'framer-motion'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { BRANCHES, ORDER } from '../branches'
+import { transformJob } from '../data'
+import GlassFolder from '@/components/ui/glass-folder-cards'
+import Ornament from '../components/Ornament'
 
 gsap.registerPlugin(ScrollTrigger)
+const SPLIT = 0.74 // 0..SPLIT — табиғаттан цифрлық ағашқа; SPLIT..1 — «Шежіре» бұтағы бойымен порталға
 gsap.ticker.lagSmoothing(0)
 const TreeScene = lazy(() => import('./TreeScene'))
 const REDUCED = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -23,11 +27,13 @@ function Caption({ p, range, children, className = '' }) {
   return <motion.div className={`si-cap ${className}`} style={{ opacity, y, pointerEvents }}>{children}</motion.div>
 }
 
-const SCENES = ['Табиғат', 'Ояну', 'Трансформация', 'Цифрлық әлем', 'Шежіре']
+const SCENES = ['Табиғат', 'Ояну', 'Трансформация', 'Цифрлық әлем', 'Портал', 'Шежіре']
 
-export default function ScrollIntro({ onNavigate, onStart }) {
+export default function ScrollIntro({ s, onNavigate, onStart }) {
   const ref = useRef(null)
-  const p = useMotionValue(0)
+  const P = useMotionValue(0) // жалпы айналдыру
+  const p = useTransform(P, (v) => Math.min(1, v / SPLIT))
+  const q = useTransform(P, (v) => Math.min(1, Math.max(0, (v - SPLIT) / (1 - SPLIT))))
   const A = useRef({ intro: 0 })
   const tl = useRef(null)
   const [ready, setReady] = useState(false)
@@ -40,10 +46,10 @@ export default function ScrollIntro({ onNavigate, onStart }) {
     const tw = gsap.to(proxy, {
       v: 1, ease: 'none',
       scrollTrigger: { trigger: ref.current, start: 'top top', end: 'bottom bottom', scrub: REDUCED ? true : 1.2 },
-      onUpdate: () => p.set(proxy.v),
+      onUpdate: () => P.set(proxy.v),
     })
     return () => { tw.scrollTrigger?.kill(); tw.kill() }
-  }, [p])
+  }, [P])
 
   // Таңғы ояну: қараңғыдан күн шығады, камера шегінеді (сессияда бір рет, өткізуге болады)
   useEffect(() => {
@@ -59,18 +65,24 @@ export default function ScrollIntro({ onNavigate, onStart }) {
   }, [ready])
 
   const hint = useTransform(p, [0, 0.04], [1, 0])
-  const bar = useTransform(p, [0, 1], ['0%', '100%'])
-  const heroO = useTransform(p, [0.86, 0.95], [0, 1])
+  const bar = useTransform(P, [0, 1], ['0%', '100%'])
+  const heroO = useTransform([p, q], ([a, b]) => Math.min(1, Math.max(0, (a - 0.86) / 0.09)) * (1 - Math.min(1, b / 0.09)))
   const heroX = useTransform(p, [0.86, 0.96], [40, 0])
   const heroPE = useTransform(heroO, (v) => (v > 0.5 ? 'auto' : 'none'))
-  const fadeOut = useTransform(p, [0.97, 1], [0, 1])
+  // портал ішінде: жұмсақ піл сүйегі жарығы (кенет ақ экрансыз), кейін «Шежіре» кіреберісі
+  const veil = useTransform(q, [0.86, 0.99], [0, 0.94])
+  const entO = useTransform(q, [0.9, 1], [0, 1])
+  const entY = useTransform(q, [0.9, 1], [30, 0])
+  const entPE = useTransform(entO, (v) => (v > 0.5 ? 'auto' : 'none'))
+  const fam = (s?.family || []).filter((f) => f.job?.trim())
+  const fw = typeof window !== 'undefined' ? Math.min(230, (window.innerWidth - 60) / (window.innerWidth < 760 ? 1 : 3)) : 230
 
   return (
     <section className="si si-dark" ref={ref}>
       <div className="si-sticky">
         {gl ? (
           <Suspense fallback={<div className="si-fallback nature"><span>Табиғат оянуда…</span></div>}>
-            <TreeScene A={A} progress={p} onNavigate={onNavigate} onReady={() => setReady(true)} />
+            <TreeScene A={A} progress={p} progress2={q} onNavigate={onNavigate} onReady={() => setReady(true)} />
           </Suspense>
         ) : (
           <div className="si-fallback dark nogl"><span>Құрылғы 3D-графиканы қолдамайды — сайттың өзі толық жұмыс істейді.</span></div>
@@ -123,7 +135,52 @@ export default function ScrollIntro({ onNavigate, onStart }) {
           </div>
         </motion.div>
 
-        <motion.div className="si-endfade" style={{ opacity: fadeOut }} />
+        {/* DIGITAL ROOTS JOURNEY — «Шежіре» бұтағы бойымен порталға */}
+        <Caption p={q} range={[0.13, 0.42]} className="dark">
+          <small className="si-kicker">05 · Шежіре бұтағы</small>
+          <h2>Бұтақ — жарық жолға айналады</h2>
+          <p>Импульс «Шежіре» бұтағымен өтіп, сені тамырыңа апаратын порталға бастайды.</p>
+        </Caption>
+        <Caption p={q} range={[0.44, 0.78]} className="dark top-cap">
+          <small className="si-kicker">06 · Портал</small>
+          <h2>Жеті атаның есігі</h2>
+          <p>Портал арқылы цифрлық кеңістік жарық әлемге ауысады.</p>
+        </Caption>
+
+        <motion.div className="si-veil ivory" style={{ opacity: veil }} />
+        <div className="si-reveal-wrap">
+          <motion.div className="shz-entry" style={{ opacity: entO, y: entY, pointerEvents: entPE }}>
+            <Ornament width={200} />
+            <h2 className="shz-title">ШЕЖІРЕ</h2>
+            <Ornament width={140} />
+            <p className="shz-sub">Әулетіңнің кәсіптері — болашақ мамандығыңның тамыры</p>
+            <div className="si-folders">
+              <GlassFolder
+                width={fw} tone="light" art="heritage" seed={5} action="none"
+                label="Менің әулетім" meta={fam.length ? `${fam.length} буын` : 'әлі толтырылмаған'}
+                files={fam.length ? fam.map((f) => ({ name: f.role, meta: f.job })) : [{ name: 'Шежірені толтыр →' }]}
+                onFileSelect={() => onNavigate(1)}
+              />
+              <GlassFolder
+                width={fw} tone="light" art="heritage" seed={9} action="none"
+                label="Кәсіп → 2040" meta="болашақ мамандықтар"
+                files={fam.length ? fam.slice(0, 4).map((f) => ({ name: transformJob(f.job)[0], meta: f.job })) : [{ name: 'Шежірені толтыр →' }]}
+                onFileSelect={() => onNavigate(1)}
+              />
+              <GlassFolder
+                width={fw} tone="light" art="digital-test" seed={7} action="none"
+                label="Келесі бұтақ" meta="Қызығушылық тесті"
+                files={[{ name: 'Тестке өту →', meta: '18 сұрақ' }]}
+                onFileSelect={() => onNavigate(2)}
+              />
+            </div>
+            <div className="shz-steps" aria-hidden="true"><i className="on" /><i /><i /><i /><i /><i /></div>
+            <div className="si-cta-row">
+              <button className="btn heritage" onClick={() => onNavigate(1)}>Шежірені құру →</button>
+              <button className="btn ghost" onClick={() => onNavigate(2)}>Тест →</button>
+            </div>
+          </motion.div>
+        </div>
         {awaking && <button className="si-skip" onClick={() => tl.current?.progress(1)}>Өткізу ⏭</button>}
         <motion.div className="si-hint dark" style={{ opacity: hint }}><span>Төмен айналдыр</span><i /></motion.div>
         <div className="si-progress dark">

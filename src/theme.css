@@ -300,6 +300,35 @@ main { position: relative; }
   .si-reveal-wrap { padding-top: 90px; }
 }
 
+/* ===== Digital Roots Journey: портал → «Шежіре» → «Тест» ===== */
+:root { --heritage: #c9a568; --navy: #172b3d; }
+.si.si-dark { height: 860vh; }
+.si-veil.ivory { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(110% 90% at 50% 45%, rgba(255, 252, 244, 0.85) 0%, #f5f2ea 62%, #efe9dc 100%); }
+.shz-entry { position: relative; width: min(1000px, 94vw); text-align: center; display: flex; flex-direction: column; align-items: center; }
+.shz-title { margin: 4px 0; font-size: clamp(2.8rem, 8vw, 5.6rem); font-weight: 800; letter-spacing: 0.04em; line-height: 1; background: linear-gradient(100deg, var(--navy) 0%, #1289b5 45%, #287eff 75%, var(--heritage) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.shz-sub { color: #4b5d6c; font-weight: 600; margin: 8px 0 6px; }
+.shz-steps { display: flex; gap: 18px; align-items: center; margin: 8px 0 4px; }
+.shz-steps i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(18, 137, 181, 0.45); background: #fff; position: relative; }
+.shz-steps i + i::before { content: ''; position: absolute; right: 12px; top: 3px; width: 18px; height: 2px; background: rgba(18, 137, 181, 0.35); }
+.shz-steps i.on { background: #1289b5; box-shadow: 0 0 10px rgba(18, 137, 181, 0.7); }
+.btn.heritage { background: linear-gradient(135deg, #1289b5, #287eff); }
+.ornament { display: block; margin: 0 auto; }
+.shz-head { text-align: center; margin: 0 auto 24px; max-width: 760px; }
+.shz-head .kicker { display: block; margin-top: 6px; color: var(--heritage); }
+.shz-head p { margin: 0 auto; }
+.shz-folders { display: flex; flex-wrap: wrap; justify-content: center; gap: 26px 34px; margin: 6px 0 30px; }
+.next-branch { margin: 40px 0 10px; padding: 18px 22px 26px; border-radius: 24px; background: var(--glass); border: 1px solid rgba(255, 255, 255, 0.85); box-shadow: var(--shadow); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); text-align: center; }
+.nb-svg { width: 100%; height: 90px; overflow: visible; }
+.nb-base { fill: none; stroke: rgba(23, 43, 61, 0.12); stroke-width: 3; vector-effect: non-scaling-stroke; }
+.nb-lit { fill: none; stroke-width: 4; stroke-linecap: round; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 6px var(--n1)); }
+.nb-dot { filter: drop-shadow(0 0 8px var(--n1)); }
+.nb-title { font-size: clamp(1.8rem, 4.4vw, 3rem); font-weight: 800; margin: 4px 0 6px; letter-spacing: -0.02em; background: linear-gradient(90deg, var(--n1), var(--n2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.nb-text p { color: var(--muted); margin: 0 0 16px; }
+@media (max-width: 760px) {
+  .shz-entry .si-folders > :nth-child(n+2) { display: none; }
+  .shz-steps { gap: 12px; }
+}
+
 /* Табиғат → цифр кіріспесінің қосымша стильдері */
 .si-fallback.nature { position: absolute; inset: 0; display: grid; place-items: center; background: linear-gradient(180deg, #4f7fb8 0%, #f3d7ae 62%, #5d7040 100%); color: #fff; font-weight: 700; letter-spacing: 0.08em; }
 .si-fallback.nature span { animation: si-blink 1.4s ease-in-out infinite; }

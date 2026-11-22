@@ -27,7 +27,7 @@ export function SkyDome({ U }) {
     side: THREE.BackSide, depthWrite: false, toneMapped: false,
     uniforms: { ...U, uSun: { value: new THREE.Vector3(-0.55, 0.16, -0.82).normalize() } },
     vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); gl_Position.z = gl_Position.w; }',
-    fragmentShader: `uniform vec3 uSun; uniform float uDig; uniform float uTime; varying vec3 vD; ${NOISE}
+    fragmentShader: `uniform vec3 uSun; uniform float uDig; uniform float uLight; uniform float uTime; varying vec3 vD; ${NOISE}
       void main(){
         float y = vD.y;
         // табиғи аспан
@@ -44,7 +44,9 @@ export function SkyDome({ U }) {
         float grid = smoothstep(0.985, 1.0, abs(sin(atan(vD.z, vD.x)*48.0))) * smoothstep(0.5, 0.0, abs(y - 0.08));
         float star = step(0.9975, h3(floor(vD*260.0))) * (0.5 + 0.5*sin(uTime*2.0 + h3(floor(vD*260.0))*30.0));
         dig += vec3(0.0, 0.7, 1.0) * (grid*0.25 + star*0.8);
-        gl_FragColor = vec4(mix(nat, dig, uDig), 1.0);
+        // жарық әлем (портал ішінде): піл сүйегі көкжиек, жұмсақ көк зеніт, жылы күн
+        vec3 ivo = mix(vec3(0.96, 0.95, 0.92), vec3(0.83, 0.91, 0.97), smoothstep(0.0, 0.7, y)) + vec3(1.0, 0.9, 0.7)*pow(s, 10.0)*0.4;
+        gl_FragColor = vec4(mix(mix(nat, dig, uDig), ivo, uLight), 1.0);
       }`,
   }), [U])
   return <mesh material={mat} frustumCulled={false}><sphereGeometry args={[400, 48, 24]} /></mesh>

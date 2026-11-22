@@ -9,6 +9,7 @@ import {
   Panels, Architecture, Arches, DataStreams, DataRain, DataNodes, Beams, EnergyRings, TechFloor,
 } from './environment'
 import { platformTexture, labelTexture, glowTexture } from './textures'
+import { makeJourney, LightPath, Portal } from './journey'
 import { BRANCHES, ORDER } from '../branches'
 
 const H = 16
@@ -378,8 +379,10 @@ function SectionNodes({ nodes, S, onNavigate }) {
 }
 
 // Камера: табиғат (алдынан, төменгі ракурс) → дің → тәж → әлем → соңғы кадр (ағаш сол жақта)
-function CameraRig({ S }) {
+function CameraRig({ S, J }) {
   const { camera, size } = useThree()
+  const jP = useMemo(() => new THREE.Vector3(), [])
+  const jL = useMemo(() => new THREE.Vector3(), [])
   const keys = useMemo(() => {
     const m = size.width < 760
     const V = (x, y, z) => new THREE.Vector3(x, y, z)
@@ -406,6 +409,19 @@ function CameraRig({ S }) {
     curves.pos.getPoint(u, P)
     curves.look.getPoint(u, L)
     if (REDUCED) { P.copy(keys[0].pos); L.copy(keys[0].look) }
+    // DIGITAL ROOTS JOURNEY: бас экраннан → бұтақ → жарық жол → портал
+    const q = S.current.q
+    if (q > 0 && !REDUCED) {
+      const ks = [{ t: 0, pos: P.clone(), look: L.clone() }, ...J.cam]
+      let j = 0
+      while (j < ks.length - 2 && q > ks[j + 1].t) j++
+      const a = ks[j], b = ks[j + 1]
+      const e = THREE.MathUtils.smootherstep(THREE.MathUtils.clamp((q - a.t) / (b.t - a.t), 0, 1), 0, 1)
+      jP.lerpVectors(a.pos, b.pos, e)
+      jL.lerpVectors(a.look, b.look, e)
+      P.copy(jP)
+      L.copy(jL)
+    }
     // ояну: камера жақыннан шегінеді
     const intro = S.current.intro
     if (intro < 1) P.add(new THREE.Vector3(0, 0, -(1 - intro) * 8))
@@ -426,28 +442,31 @@ function CameraRig({ S }) {
 }
 
 // Барлық фазаларды айналдыруға байланыстыратын «режиссер»: жарық, тұман, материалдар
-function Director({ U, S, A, progress, trees, lights }) {
+function Director({ U, S, A, progress, progress2, trees, lights }) {
   const { scene, gl } = useThree()
-  const tmp = useMemo(() => ({ warm: C('#ffd9a0'), cold: C('#7fc4ff'), fogN: C('#d9dde0'), fogD: C('#06263d'), hemN: C('#cfe6ff'), hemD: C('#0a3550'), grN: C('#5b6b3a'), grD: C('#04121f') }), [])
+  const tmp = useMemo(() => ({ warm: C('#ffd9a0'), cold: C('#7fc4ff'), fogN: C('#d9dde0'), fogD: C('#06263d'), ivory: C('#f5f2ea'), hemN: C('#cfe6ff'), hemD: C('#0a3550'), grN: C('#5b6b3a'), grD: C('#04121f') }), [])
   useFrame(({ clock }) => {
     const s = S.current
     const p = progress.get()
     s.p = p
+    s.q = progress2 ? progress2.get() : 0
+    s.light = ss(0.7, 0.98, s.q)
+    U.uLight.value = s.light
     s.intro = A.current.intro
     s.energy = ss(0.18, 0.4, p)
     s.cool = ss(0.22, 0.58, p)
     s.dis = ss(0.4, 0.62, p) * 1.05
     s.envDig = ss(0.42, 0.64, p)
     s.rise = ss(0.46, 0.64, p)
-    s.world = ss(0.5, 0.7, p)
-    s.nodes = SECTIONS.map((_, i) => ss(0.6 + i * 0.02, 0.64 + i * 0.02, p))
+    s.world = ss(0.5, 0.7, p) * (1 - s.light * 0.92)
+    s.nodes = SECTIONS.map((_, i) => ss(0.6 + i * 0.02, 0.64 + i * 0.02, p) * (i === 0 ? 1 + ss(0, 0.2, s.q) * 0.6 : 1 - ss(0.1, 0.4, s.q) * 0.7))
     U.uTime.value = clock.elapsedTime
     U.uEnergy.value = s.energy
     U.uCool.value = s.cool
     U.uDis.value = s.dis
     U.uDig.value = s.envDig
-    U.uFogC.value.copy(tmp.fogN).lerp(tmp.fogD, s.envDig)
-    U.uFogD.value = THREE.MathUtils.lerp(0.009, 0.012, s.envDig)
+    U.uFogC.value.copy(tmp.fogN).lerp(tmp.fogD, s.envDig).lerp(tmp.ivory, s.light)
+    U.uFogD.value = THREE.MathUtils.lerp(THREE.MathUtils.lerp(0.009, 0.012, s.envDig), 0.03, s.light)
     scene.fog.color.copy(U.uFogC.value)
     scene.fog.density = U.uFogD.value
     gl.toneMappingExposure = (0.05 + 0.95 * s.intro) * THREE.MathUtils.lerp(1.0, 1.1, s.envDig)
@@ -464,13 +483,14 @@ function Director({ U, S, A, progress, trees, lights }) {
   return null
 }
 
-function Universe({ A, progress, onNavigate, onReady }) {
+function Universe({ A, progress, progress2, onNavigate, onReady }) {
   const U = useMemo(() => ({
     uTime: { value: 0 }, uFogC: { value: C('#d9dde0') }, uFogD: { value: 0.009 },
-    uEnergy: { value: 0 }, uCool: { value: 0 }, uDis: { value: 0 }, uDig: { value: 0 },
+    uEnergy: { value: 0 }, uCool: { value: 0 }, uDis: { value: 0 }, uDig: { value: 0 }, uLight: { value: 0 },
   }), [])
-  const S = useRef({ p: 0, intro: 0, energy: 0, cool: 0, dis: 0, envDig: 0, rise: 0, world: 0, focus: null, nodes: SECTIONS.map(() => 0) })
+  const S = useRef({ p: 0, q: 0, light: 0, intro: 0, energy: 0, cool: 0, dis: 0, envDig: 0, rise: 0, world: 0, focus: null, nodes: SECTIONS.map(() => 0) })
   const T = useTrees(U)
+  const J = useMemo(() => makeJourney(T.nodes[0], H), [T])
   const lights = { sun: useRef(), fill: useRef(), hemi: useRef(), key: useRef(), rim: useRef() }
   useEffect(() => { onReady?.() }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return (
@@ -484,7 +504,7 @@ function Universe({ A, progress, onNavigate, onReady }) {
       <directionalLight ref={lights.fill} position={[14, 10, 30]} intensity={0.9} color="#ffe9cf" />
       <directionalLight ref={lights.key} position={[2, 30, 8]} intensity={0} color="#7fc4ff" />
       <directionalLight ref={lights.rim} position={[-8, 12, -20]} intensity={0} color="#19e6d2" />
-      <Director U={U} S={S} A={A} progress={progress} trees={T} lights={lights} />
+      <Director U={U} S={S} A={A} progress={progress} progress2={progress2} trees={T} lights={lights} />
       <SkyDome U={U} />
       <Hills U={U} />
       <Meadow U={U} y={GROUND} />
@@ -505,12 +525,14 @@ function Universe({ A, progress, onNavigate, onReady }) {
       <DataRain U={U} S={S} lite={LITE} />
       <DataNodes U={U} S={S} lite={LITE} />
       <Beams U={U} S={S} />
-      <CameraRig S={S} />
+      <LightPath U={U} S={S} J={J} />
+      <Portal S={S} J={J} />
+      <CameraRig S={S} J={J} />
     </>
   )
 }
 
-export default function TreeScene({ A, progress, onNavigate, onReady }) {
+export default function TreeScene({ A, progress, progress2, onNavigate, onReady }) {
   return (
     <Canvas
       shadows={!LITE}
@@ -518,7 +540,7 @@ export default function TreeScene({ A, progress, onNavigate, onReady }) {
       camera={{ position: [0, 3.2, 33], fov: MOBILE ? 62 : 45, near: 0.1, far: 900 }}
       gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.05 }}
     >
-      <Universe A={A} progress={progress} onNavigate={onNavigate} onReady={onReady} />
+      <Universe A={A} progress={progress} progress2={progress2} onNavigate={onNavigate} onReady={onReady} />
       {!LITE && (
         <EffectComposer multisampling={0}>
           <Bloom mipmapBlur luminanceThreshold={0.85} luminanceSmoothing={0.2} intensity={1.0} radius={0.7} />

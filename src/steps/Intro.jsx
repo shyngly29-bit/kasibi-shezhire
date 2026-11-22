@@ -16,6 +16,7 @@ export default function Intro({ s, update, next, go }) {
   return (
     <div className="intro">
       <ScrollIntro
+        s={s}
         onNavigate={go}
         onStart={() => document.getElementById('start')?.scrollIntoView({ behavior: 'smooth' })}
       />

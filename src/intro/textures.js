@@ -174,6 +174,46 @@ export function platformTexture() {
   return tex(c)
 }
 
+// Портал: алтын қошқар мүйіз оюы бар сақина + ішкі жұмсақ піл сүйегі жарығы
+export function portalTexture() {
+  const S = 1024
+  const [c, g] = canvas(S, S)
+  const m = S / 2
+  g.translate(m, m)
+  const glow = g.createRadialGradient(0, 0, 0, 0, 0, m * 0.8)
+  glow.addColorStop(0, 'rgba(250,240,218,0.9)')
+  glow.addColorStop(0.55, 'rgba(240,232,214,0.7)')
+  glow.addColorStop(0.8, 'rgba(160,220,240,0.25)')
+  glow.addColorStop(1, 'rgba(0,0,0,0)')
+  g.fillStyle = glow
+  g.beginPath(); g.arc(0, 0, m * 0.8, 0, Math.PI * 2); g.fill()
+  const GOLD = 'rgba(201,165,104,1)'
+  g.strokeStyle = GOLD
+  g.lineWidth = 6
+  ;[0.82, 0.97].forEach((k) => { g.beginPath(); g.arc(0, 0, m * k, 0, Math.PI * 2); g.stroke() })
+  g.lineWidth = 2
+  g.strokeStyle = 'rgba(0,217,255,0.8)'
+  ;[0.85, 0.94].forEach((k) => { g.beginPath(); g.arc(0, 0, m * k, 0, Math.PI * 2); g.stroke() })
+  // 16 қошқар мүйіз элементі шеңбер бойымен
+  g.strokeStyle = GOLD
+  g.lineWidth = 5
+  for (let i = 0; i < 16; i++) {
+    g.save()
+    g.rotate((i / 16) * Math.PI * 2)
+    g.translate(0, -m * 0.895)
+    g.beginPath()
+    for (let s = -1; s <= 1; s += 2) {
+      g.moveTo(0, 16)
+      g.bezierCurveTo(s * 8, -6, s * 30, -14, s * 26, 4)
+      g.bezierCurveTo(s * 23, 15, s * 12, 9, s * 15, 1)
+    }
+    g.moveTo(0, 16); g.lineTo(0, 26)
+    g.stroke()
+    g.restore()
+  }
+  return tex(c)
+}
+
 // 3D-жазу (бұтақ түйіндері үшін)
 export function labelTexture(text, color) {
   const [c, g] = canvas(512, 128)

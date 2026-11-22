@@ -1,5 +1,9 @@
 import { motion } from 'framer-motion'
 import { transformJob } from '../data'
+import { BRANCHES } from '../branches'
+import Ornament from '../components/Ornament'
+import NextBranch from '../components/NextBranch'
+import GlassFolder from '@/components/ui/glass-folder-cards'
 
 export default function Shezhire({ s, update, next }) {
   const fam = s.family
@@ -7,13 +11,32 @@ export default function Shezhire({ s, update, next }) {
   const add = () => update({ family: [...fam, { role: 'Атамның әкесі', job: '' }] })
   const del = (i) => update({ family: fam.filter((_, j) => j !== i) })
   const filled = fam.filter((f) => f.job.trim())
+  const fw = typeof window !== 'undefined' ? Math.min(250, window.innerWidth - 60) : 250
+  const T = BRANCHES.test
 
   return (
-    <div>
-      <div className="head">
+    <div className="shz">
+      <div className="head shz-head">
+        <Ornament width={180} />
+        <small className="kicker">01 · Шежіре бұтағы</small>
         <h2>Кәсіби шежіре</h2>
         <p>Ата-анаңнан, атаң мен әжеңнен сұра: олар кім болып жұмыс істеді? Әр кәсіп болашақта қалай өзгеретінін көресің.</p>
       </div>
+
+      {/* Әулеттің шыны папкалары — тек оқушы енгізген нақты деректер */}
+      {filled.length > 0 && (
+        <div className="shz-folders">
+          {filled.map((f, i) => (
+            <GlassFolder
+              key={f.role + f.job + i}
+              width={fw} tone="light" art="heritage" seed={3 + i * 4} action="none"
+              appearDelay={i * 120}
+              label={f.role} meta={f.job}
+              files={transformJob(f.job).map((j) => ({ name: j, meta: '2040' }))}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="grid2">
         <div className="card form">
@@ -48,7 +71,16 @@ export default function Shezhire({ s, update, next }) {
           )}
         </div>
       </div>
-      <div className="actions"><button className="btn" disabled={!filled.length} onClick={next}>Келесі: тест →</button></div>
+
+      {/* Келесі бірюза-көк бұтақ: импульс өтеді → «Қызығушылық тесті» */}
+      <NextBranch
+        kicker="02 · Келесі бұтақ"
+        title="Қызығушылық тесті"
+        text={filled.length ? '18 сұрақ арқылы қызығушылық типіңді анықта.' : 'Алдымен кем дегенде бір кәсіпті енгіз — бұтақ сонда ашылады.'}
+        c1={T.c1} c2={T.c2}
+        label="Тестке өту →"
+        onGo={() => filled.length && next()}
+      />
     </div>
   )
 }
