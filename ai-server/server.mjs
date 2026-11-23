@@ -7,7 +7,7 @@ const KEY = (process.env.OPENROUTER_API_KEY || '').trim().replace(/^Bearer\s+/i,
 // Кілттің өзін ешқашан логқа шығармаймыз — тек пішімін тексереміз
 console.log(`Кілт: ${KEY ? (KEY.startsWith('sk-or-') ? 'OpenRouter пішімі дұрыс' : 'sk-or- деп басталмайды!') : 'жоқ'}, ұзындығы ${KEY.length}`)
 // AI_MODEL: бір модель немесе үтір арқылы тізім — біріншісі қатып қалса, OpenRouter келесісіне ауысады
-const MODELS = (process.env.AI_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b:free,baidu/ernie-5.5-flash-preview:free,inclusionai/ling-3.2-flash:free').split(',').map((s) => s.trim()).filter(Boolean)
+const MODELS = (process.env.AI_MODEL || 'google/gemma-4-31b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free,baidu/ernie-5.5-flash-preview:free').split(',').map((s) => s.trim()).filter(Boolean)
 const MODEL = MODELS.join(', ')
 const SITE = process.env.SITE_URL || 'https://shyngly29-bit.github.io/kasibi-shezhire/'
 const PORT = Number(process.env.PORT || 8787)

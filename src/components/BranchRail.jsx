@@ -37,7 +37,7 @@ const ICONS = {
 // Жапырақ пішіні (негізі 0,0 нүктесінде, ұзындығы ~26)
 const LEAF = 'M0,0 C7,-12 22,-13 34,0 C22,12 7,12 0,0 Z'
 
-export default function BranchRail({ step, done, onGo }) {
+export default function BranchRail({ step, done, open = 99, onGo }) {
   const path = useRef(null)
   const lit = useRef(null)
   const dot = useRef(null)
@@ -137,6 +137,7 @@ export default function BranchRail({ step, done, onGo }) {
 
   const choose = (i) => {
     if (i === step) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
+    if (i > open) { onGo(i); return } // құлыпталған — App ескерту көрсетеді
     if (pending >= 0 || !lens) return
     setPending(i); setTip(i)
     skip.current = i
@@ -201,7 +202,7 @@ export default function BranchRail({ step, done, onGo }) {
         <div className="tj-nodes">
           {ORDER.map((id, i) => {
             const b = BRANCHES[id]
-            const state = i === step ? 'active' : done[id] ? 'done' : 'available'
+            const state = i === step ? 'active' : i > open ? 'locked' : done[id] ? 'done' : 'available'
             const showTip = hover === i || tip === i
             return (
               <button

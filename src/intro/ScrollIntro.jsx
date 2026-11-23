@@ -14,6 +14,9 @@ gsap.ticker.lagSmoothing(0)
 const TreeScene = lazy(() => import('./TreeScene'))
 const REDUCED = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 const AWAKE_KEY = 'ks-awake-v3'
+const TOUCH = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
+// Мәтін карточкаларының ортасы (жалпы P шкаласында) — айналдыру тоқтағанда ең жақын мәтінге жұмсақ «тұрақтайды»
+const SNAPS = [0, 0.29 * SPLIT, 0.51 * SPLIT, 0.73 * SPLIT, 0.93 * SPLIT, SPLIT + 0.225 * (1 - SPLIT), SPLIT + 0.54 * (1 - SPLIT)]
 
 function hasWebGL() {
   try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')) } catch { return false }
@@ -64,6 +67,15 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
       scrollTrigger: {
         trigger: ref.current, start: 'top top', end: 'bottom bottom', scrub: REDUCED ? true : 1.2,
         onUpdate: (self) => { st.prog = self.progress; st.dir = self.direction },
+        // соңғы бөлікте (портал) тұрақтамаймыз — әрі қарай өтуге кедергі болмасын
+        snap: REDUCED ? undefined : {
+          snapTo: (v) => {
+            if (v > 0.9) return v
+            const n = SNAPS.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a))
+            return Math.abs(n - v) < 0.035 ? n : v // тек мәтінге жақын тоқтағанда ғана жұмсақ магнит
+          },
+          duration: { min: 0.35, max: 0.9 }, delay: 0.18, ease: 'power2.inOut', inertia: false,
+        },
       },
       onUpdate: () => {
         const v = proxy.v
@@ -110,7 +122,7 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
     return () => t.kill()
   }, [ready])
 
-  const hint = useTransform(p, [0, 0.04], [1, 0])
+  const hint = useTransform(P, [0, 0.025], [1, 0])
   const bar = useTransform(P, [0, 1], ['0%', '100%'])
   const heroO = useTransform([p, q], ([a, b]) => Math.min(1, Math.max(0, (a - 0.86) / 0.09)) * (1 - Math.min(1, b / 0.09)))
   const heroX = useTransform(p, [0.86, 0.96], [40, 0])
@@ -230,7 +242,13 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
           </motion.div>
         </div>
         {awaking && <button className="si-skip" onClick={() => tl.current?.progress(1)}>Өткізу ⏭</button>}
-        <motion.div className="si-hint dark" style={{ opacity: hint }}><span>Төмен айналдыр</span><i /></motion.div>
+        {!awaking && (
+          <motion.div className={`si-swipe ${TOUCH ? 'touch' : 'mouse'}`} style={{ opacity: hint }} aria-hidden="true">
+            <div className="si-swipe-ico">{TOUCH ? <><b className="finger" /><i className="trail" /></> : <i className="wheel" />}</div>
+            <span>{TOUCH ? 'Саусақпен жоғары сырғыт' : 'Тышқан дөңгелегін айналдыр'}</span>
+            <small>↓ саяхатты бастау</small>
+          </motion.div>
+        )}
         <div className="si-progress dark">
           <motion.div className="si-bar" style={{ height: bar }} />
           {SCENES.map((c, i) => <span key={c} style={{ top: `${(i / (SCENES.length - 1)) * 100}%` }}>{c}</span>)}

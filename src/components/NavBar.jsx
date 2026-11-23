@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 // Liquid Glass навигация: кең панель → айналдырғанда ықшам капсула (бөлім атауы + бургер) → бургер-мәзір
-export default function NavBar({ steps, step, done, go }) {
+export default function NavBar({ steps, step, done, open: openTo = 99, go }) {
   const [compact, setCompact] = useState(false)
   const [open, setOpen] = useState(false)
   const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 900)
@@ -67,12 +67,12 @@ export default function NavBar({ steps, step, done, go }) {
             {steps.map((st, i) => (
               <a
                 key={st.id} href={'#' + st.hash}
-                className={`lg-tab ${i === step ? 'on' : ''}`}
+                className={`lg-tab ${i === step ? 'on' : ''} ${i > openTo ? 'locked' : ''}`}
                 aria-current={i === step ? 'page' : undefined}
                 onClick={(e) => { e.preventDefault(); pick(i) }}
               >
                 {i === step && <motion.span layoutId="lg-active" className="lg-pill" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}
-                <span className="lg-ic">{done[st.id] && i !== step ? '✓' : st.icon}</span>
+                <span className="lg-ic">{i > openTo ? '🔒' : done[st.id] && i !== step ? '✓' : st.icon}</span>
                 <em>{st.label}</em>
               </a>
             ))}
@@ -102,11 +102,11 @@ export default function NavBar({ steps, step, done, go }) {
             {steps.map((st, i) => (
               <motion.a
                 key={st.id} href={'#' + st.hash}
-                className={`lg-mi ${i === step ? 'on' : ''}`}
+                className={`lg-mi ${i === step ? 'on' : ''} ${i > openTo ? 'locked' : ''}`}
                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.035 }}
                 onClick={(e) => { e.preventDefault(); pick(i) }}
               >
-                <span className="lg-ic">{st.icon}</span>
+                <span className="lg-ic">{i > openTo ? '🔒' : st.icon}</span>
                 <b>{st.label}</b>
                 {done[st.id] && <small>✓</small>}
               </motion.a>

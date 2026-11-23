@@ -46,7 +46,7 @@ export default function Intro({ s, update, next, go }) {
         ))}
       </div>
 
-      <div className="card form">
+      <div className="card form" id="me">
         <h3>Өзің туралы</h3>
         <label>Аты-жөнің<input value={st.name} onChange={set('name')} placeholder="Мысалы: Айдана Серікқызы" /></label>
         <div className="row2">
