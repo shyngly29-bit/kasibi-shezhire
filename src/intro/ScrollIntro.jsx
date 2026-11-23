@@ -42,6 +42,19 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
   const tl = useRef(null)
   const [ready, setReady] = useState(false)
   const [awaking, setAwaking] = useState(false)
+  // Кеңес: тек басында; дөңгелек, пернетақта, саусақ немесе айналдыру болса — біржола жасырылады
+  const [hintOn, setHintOn] = useState(true)
+  useEffect(() => {
+    if (!hintOn) return
+    const off = () => setHintOn(false)
+    const onKey = (e) => { if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Spacebar', 'End', 'Home'].includes(e.key)) off() }
+    const onScroll = () => { if (window.scrollY > 40) off() }
+    window.addEventListener('wheel', off, { passive: true })
+    window.addEventListener('touchmove', off, { passive: true })
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.removeEventListener('wheel', off); window.removeEventListener('touchmove', off); window.removeEventListener('keydown', onKey); window.removeEventListener('scroll', onScroll) }
+  }, [hintOn])
   const [gl] = useState(() => (typeof window === 'undefined' ? true : hasWebGL()))
   // Кіріспе экраннан тыс болса — 3D-рендер толық тоқтайды (батарея мен FPS үнемі)
   const [active, setActive] = useState(true)
@@ -242,11 +255,13 @@ export default function ScrollIntro({ s, onNavigate, onStart }) {
           </motion.div>
         </div>
         {awaking && <button className="si-skip" onClick={() => tl.current?.progress(1)}>Өткізу ⏭</button>}
-        {!awaking && (
-          <motion.div className={`si-swipe ${TOUCH ? 'touch' : 'mouse'}`} style={{ opacity: hint }} aria-hidden="true">
-            <div className="si-swipe-ico">{TOUCH ? <><b className="finger" /><i className="trail" /></> : <i className="wheel" />}</div>
-            <span>{TOUCH ? 'Саусақпен жоғары сырғыт' : 'Тышқан дөңгелегін айналдыр'}</span>
-            <small>↓ саяхатты бастау</small>
+        {!awaking && hintOn && (
+          <motion.div className="si-swipe-wrap" style={{ opacity: hint }} aria-hidden="true">
+            <div className={`si-swipe ${TOUCH ? 'touch' : 'mouse'}`}>
+              <div className="si-swipe-ico">{TOUCH ? <><b className="finger" /><i className="trail" /></> : <i className="wheel" />}</div>
+              <span>{TOUCH ? 'Саусақпен жоғары сырғыт' : 'Тышқан дөңгелегін айналдыр'}</span>
+              <small>↓ саяхатты бастау · немесе ↓ пернесі</small>
+            </div>
           </motion.div>
         )}
         <div className="si-progress dark">
