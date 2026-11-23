@@ -7,7 +7,7 @@ const KEY = (process.env.OPENROUTER_API_KEY || '').trim().replace(/^Bearer\s+/i,
 // Кілттің өзін ешқашан логқа шығармаймыз — тек пішімін тексереміз
 console.log(`Кілт: ${KEY ? (KEY.startsWith('sk-or-') ? 'OpenRouter пішімі дұрыс' : 'sk-or- деп басталмайды!') : 'жоқ'}, ұзындығы ${KEY.length}`)
 // AI_MODEL: бір модель немесе үтір арқылы тізім — біріншісі қатып қалса, OpenRouter келесісіне ауысады
-const MODELS = (process.env.AI_MODEL || 'google/gemma-4-31b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free,baidu/ernie-5.5-flash-preview:free').split(',').map((s) => s.trim()).filter(Boolean)
+const MODELS = (process.env.AI_MODEL || 'google/gemma-4-31b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-super-vl:free').split(',').map((s) => s.trim()).filter(Boolean)
 const MODEL = MODELS.join(', ')
 const SITE = process.env.SITE_URL || 'https://shyngly29-bit.github.io/kasibi-shezhire/'
 const PORT = Number(process.env.PORT || 8787)
@@ -31,7 +31,8 @@ const BASE = `Сен — «Кәсіби шежіре» платформасын�
 Холланд типтері: Практик-шебер (R), Зерттеуші (I), Шығармашыл (A), Әлеуметтік (S), Кәсіпкер (E), Ұйымдастырушы (C).
 Өңір контексі: Ақтөбе облысы — мұнай-газ, хром және ферроқорытпа өндірісі, ауыл шаруашылығы, медицина, құрылыс, логистика. Ақтөбеде колледждер мен университеттер бар (мыс. Қ. Жұбанов атындағы Ақтөбе өңірлік университеті, Марат Оспанов атындағы Батыс Қазақстан медицина университеті).
 Ережелер:
-• Әрқашан қазақ тілінде, оқушы жасына сай қарапайым, жылы, ынталандырушы үнмен жаз. Оқушы орысша жазса да, қазақша жауап бер.
+• ТЕК қазақ тілінде, ТЕК кирилл әліпбиімен жаз (а ә б в г ғ д е ё ж з и й к қ л м н ң о ө п р с т у ұ ү ф х һ ц ч ш щ ъ ы і ь э ю я). Қытай иероглифтерін, араб, латын әріптерін, ағылшын сөздерін ҚОЛДАНБА; сөз ішінде әріптерді араластырма. Тек VR, ЖИ, IT сияқты қысқартулар латынша болуы мүмкін.
+• Оқушы жасына сай қарапайым, жылы, ынталандырушы үнмен жаз. Оқушы орысша жазса да, қазақша жауап бер.
 • Қысқа абзацтар; тізім керек болса «•». Markdown тақырыптарын (#) және кестелерді қолданба.
 • Нақты жалақы, балл, оқу ақысы сияқты сандарды ойдан шығарма. Болашақ туралы айтқанда болжам екенін ескерт.
 • Мүмкіндігінше платформа қадамдарына сілте (мыс. «VR-сынамада электрикті байқап көр», «тестті қайта тапсыр»).
@@ -106,8 +107,20 @@ function cacheSet(k, v) { if (cache.size > 500) cache.delete(cache.keys().next()
 
 class UpstreamError extends Error { constructor(status, msg) { super(msg); this.status = status } }
 
-async function ask(job) {
-  if (!KEY) throw new UpstreamError(401, 'OPENROUTER_API_KEY орнатылмаған')
+// ---------- әліпби бақылауы: иероглиф, араб т.б. әріптер шықса — қайта сұраймыз ----------
+const FOREIGN = /[֐-׿؀-ۿݐ-ݿࢠ-ࣿऀ-෿฀-๿ᄀ-ᇿ぀-ヿ㄀-ㄯ㐀-䶿一-鿿가-힯豈-﫿ﭐ-﷿ﹰ-﻿ｦ-ﾟ]/g
+const MIXED = /[\p{Script=Cyrillic}][a-zA-Z]|[a-zA-Z][\p{Script=Cyrillic}]/u // «суretтерді» сияқты аралас сөздер
+const badScore = (s) => (s.match(FOREIGN) || []).length + (s.split(/\s+/).filter((w) => MIXED.test(w)).length * 2)
+function cleanText(s) {
+  return s.replace(FOREIGN, '')
+    .replace(/[（(]\s*[)）]/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/ +([,.!?;:])/g, '$1')
+    .trim()
+}
+
+async function callOnce(job, models, extra) {
+  const system = extra ? `${job.system}\n\n${extra}` : job.system
   const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -117,21 +130,42 @@ async function ask(job) {
       'X-Title': 'Kasibi Shezhire',
     },
     body: JSON.stringify({
-      ...(MODELS.length > 1 ? { models: MODELS } : { model: MODELS[0] }),
+      ...(models.length > 1 ? { models } : { model: models[0] }),
       max_tokens: job.maxTokens,
-      messages: [{ role: 'system', content: job.system }, ...job.messages],
-      reasoning: { effort: 'low' }, // чат үшін жылдам әрі арзан
+      temperature: 0.5, // тұрақтырақ, «бөтен» таңбалар азырақ
+      messages: [{ role: 'system', content: system }, ...job.messages],
+      reasoning: { effort: 'low' },
     }),
-    signal: AbortSignal.timeout(90_000),
+    signal: AbortSignal.timeout(60_000),
   })
   const json = await r.json().catch(() => ({}))
   if (!r.ok || json.error) throw new UpstreamError(json.error?.code || r.status, json.error?.message || `HTTP ${r.status}`)
   const choice = json.choices?.[0]
-  const text = String(choice?.message?.content || '').trim()
-  if (!text || choice?.finish_reason === 'content_filter' || choice?.native_finish_reason === 'refusal') {
-    return { refused: true, text: 'Кешір, бұл сұраққа жауап бере алмаймын. Басқаша сұрап көр.' }
+  return { choice, text: String(choice?.message?.content || '').trim(), model: json.model }
+}
+
+async function ask(job) {
+  if (!KEY) throw new UpstreamError(401, 'OPENROUTER_API_KEY орнатылмаған')
+  let best = null
+  const start = Date.now()
+  // 1-әрекет: толық тізім; бөтен әріп шықса — келесі модельден бастап, қатаң ескертумен қайталау (ең көбі 2 рет)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0 && Date.now() - start > 55_000) break // сайт 120 с күтеді — уақыт қорын сақтаймыз
+    const rot = attempt === 0 ? MODELS : [...MODELS.slice(attempt % MODELS.length), ...MODELS.slice(0, attempt % MODELS.length)]
+    const extra = attempt === 0 ? '' : 'МАҢЫЗДЫ: алдыңғы жауапта бөтен әріптер (иероглиф/араб/латын) болды. Жауапты ТЕК қазақша кирилл әріптерімен жаз.'
+    let res
+    try { res = await callOnce(job, rot, extra) } catch (err) { if (best) break; throw err }
+    const { choice, text, model } = res
+    if (!text || choice?.finish_reason === 'content_filter' || choice?.native_finish_reason === 'refusal') {
+      if (best) break
+      return { refused: true, text: 'Кешір, бұл сұраққа жауап бере алмаймын. Басқаша сұрап көр.' }
+    }
+    const score = badScore(text)
+    if (!best || score < best.score) best = { text, score, model, truncated: choice.finish_reason === 'length' }
+    if (score === 0) break
+    console.log(`Бөтен таңбалар (${score}) — ${model}, қайталау ${attempt + 1}`)
   }
-  return { text, truncated: choice.finish_reason === 'length', model: json.model }
+  return { text: cleanText(best.text), truncated: best.truncated, model: best.model }
 }
 
 // ---------- HTTP ----------
